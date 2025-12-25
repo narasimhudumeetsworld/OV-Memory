@@ -292,17 +292,6 @@ make test-all
 
 ---
 
-## 🧧 Tested With
-
-- ✅ **Claude** (3.5 Sonnet, Opus)
-- ✅ **Gemini** (2.0 Flash, Pro)
-- ✅ **GPT-4** (Turbo, Vision)
-- ✅ **LLaMA** (7B, 13B, 70B)
-- ✅ **Mistral**
-- ✅ **Codex** (Code Completion)
-- ✅ **OpenAI o1** (Reasoning)
-- ✅ **All Major LLMs**
-
 ---
 
 ## 📊 Performance
