@@ -1,0 +1,28 @@
+{
+  "name": "@ov-memory/core",
+  "version": "1.0.0",
+  "description": "OV-Memory: Fractal Honeycomb Graph Database for AI agents",
+  "main": "ov_memory.js",
+  "types": "ov_memory.ts",
+  "scripts": {
+    "test": "node test_ov_memory.js",
+    "build": "tsc ov_memory.ts --target ES2020",
+    "lint": "eslint ov_memory.ts",
+    "start": "node ov_memory.js"
+  },
+  "keywords": [
+    "graph",
+    "database",
+    "ai",
+    "memory",
+    "honeycomb",
+    "fractal"
+  ],
+  "author": "Prayaga Vaibhavlakshmi",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
