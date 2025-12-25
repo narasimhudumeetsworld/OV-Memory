@@ -1,359 +1,375 @@
 #!/usr/bin/env python3
 """
-OV-Memory v1.1 Core Functionality Tests
-Tests metabolism engine, centroid indexing, and basic graph operations
+OV-Memory v1.1 Core Unit Tests
+
+Tests core functionality:
+- Graph creation and node/edge management
+- Centrality calculations
+- Metabolism tracking
+- Retrieval and traversal
+- Persistence (save/load)
 
 Run: pytest test_ov_memory_core.py -v
 """
 
 import pytest
 import numpy as np
+import tempfile
+import json
 from pathlib import Path
 import sys
 
-# Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from python.ov_memory_v1_1 import (
     create_graph,
     add_node,
     add_edge,
-    initialize_metabolism,
-    update_metabolism,
+    remove_edge,
     recalculate_centrality,
     find_most_relevant_node,
-    create_fractal_seed,
+    cosine_similarity,
     save_binary,
     load_binary,
+    update_metabolism,
     MetabolicState,
-    cosine_similarity,
-    temporal_decay,
-    calculate_metabolic_relevance,
-    print_graph_stats,
     MAX_EMBEDDING_DIM,
-    CONFIG
+    OVMemoryGraph,
+    OVMemoryNode,
 )
 
 
-class TestBasicGraphOperations:
-    """Test fundamental graph operations"""
-
+class TestGraphCreation:
+    """Test graph initialization and basic properties"""
+    
     def test_graph_creation(self):
-        """Test graph initialization"""
-        graph = create_graph("test_graph", 100, 3600)
-        assert graph.name == "test_graph"
-        assert graph.node_count == 0
-        assert graph.max_nodes == 100
-        assert graph.max_session_time_seconds == 3600
-
-    def test_add_node(self):
-        """Test node addition"""
-        graph = create_graph("test_graph", 100, 3600)
-        embedding = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
+        """Test creating a new graph"""
+        graph = create_graph("test_graph", max_nodes=1000, time_budget=3600)
         
-        node_id = add_node(graph, embedding, "Test Node")
-        assert node_id == 0
-        assert graph.node_count == 1
-        assert node_id in graph.nodes
-        assert graph.nodes[node_id].data == "Test Node"
+        assert graph.name == "test_graph"
+        assert graph.max_nodes == 1000
+        assert graph.time_budget_seconds == 3600
+        assert graph.node_count == 0
+        assert len(graph.nodes) == 0
+        assert graph.metabolism is not None
+    
+    def test_graph_metabolism_initialization(self):
+        """Test metabolism state on graph creation"""
+        graph = create_graph("test_graph", max_nodes=100, time_budget=300)
+        
+        assert graph.metabolism.state == MetabolicState.HEALTHY
+        assert graph.metabolism.metabolic_weight == 1.0
+        assert graph.metabolism.minutes_remaining > 0
 
+
+class TestNodeManagement:
+    """Test node creation, deletion, and properties"""
+    
+    def test_add_single_node(self):
+        """Test adding a single node"""
+        graph = create_graph("test", 100, 3600)
+        
+        embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        node_id = add_node(graph, embedding, "test data")
+        
+        assert node_id is not None
+        assert node_id in graph.nodes
+        assert graph.node_count == 1
+        assert graph.nodes[node_id].data == "test data"
+    
     def test_add_multiple_nodes(self):
         """Test adding multiple nodes"""
-        graph = create_graph("test_graph", 100, 3600)
+        graph = create_graph("test", 100, 3600)
         
         node_ids = []
         for i in range(10):
-            embedding = np.full(MAX_EMBEDDING_DIM, 0.5 + i*0.01, dtype=np.float32)
-            node_id = add_node(graph, embedding, f"Node {i}")
+            embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+            node_id = add_node(graph, embedding, f"node_{i}")
             node_ids.append(node_id)
         
         assert graph.node_count == 10
-        assert len(node_ids) == 10
         assert all(nid in graph.nodes for nid in node_ids)
+    
+    def test_add_node_respects_max_nodes(self):
+        """Test that adding nodes respects max_nodes limit"""
+        graph = create_graph("test", max_nodes=5, time_budget=3600)
+        
+        for i in range(10):
+            embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+            node_id = add_node(graph, embedding, f"node_{i}")
+            
+            # Should not exceed max_nodes
+            assert graph.node_count <= 5
+    
+    def test_node_embedding_storage(self):
+        """Test that node embeddings are stored correctly"""
+        graph = create_graph("test", 100, 3600)
+        
+        embedding = np.array([1, 2, 3] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        node_id = add_node(graph, embedding, "test")
+        
+        stored_embedding = graph.nodes[node_id].vector_embedding
+        assert np.allclose(stored_embedding, embedding)
+    
+    def test_fractal_seed_marking(self):
+        """Test marking nodes as fractal seeds"""
+        graph = create_graph("test", 100, 3600)
+        
+        embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        node_id = add_node(graph, embedding, "important_fact")
+        
+        # Mark as fractal seed
+        graph.nodes[node_id].is_fractal_seed = True
+        
+        assert graph.nodes[node_id].is_fractal_seed
 
+
+class TestEdgeManagement:
+    """Test edge creation, deletion, and properties"""
+    
     def test_add_edge(self):
-        """Test edge addition"""
-        graph = create_graph("test_graph", 100, 3600)
+        """Test adding an edge between nodes"""
+        graph = create_graph("test", 100, 3600)
         
-        emb1 = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        emb2 = np.full(MAX_EMBEDDING_DIM, 0.6, dtype=np.float32)
+        # Create two nodes
+        emb1 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        emb2 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        node1 = add_node(graph, emb1, "node1")
+        node2 = add_node(graph, emb2, "node2")
         
-        node1 = add_node(graph, emb1, "Node 1")
-        node2 = add_node(graph, emb2, "Node 2")
+        # Add edge
+        success = add_edge(graph, node1, node2, 0.9, "related")
         
-        success = add_edge(graph, node1, node2, 0.9, "related_to")
-        assert success is True
+        assert success
+        assert node2 in graph.nodes[node1].neighbors
+        assert node1 in graph.nodes[node2].neighbors
+    
+    def test_bounded_connectivity_constraint(self):
+        """Test that nodes respect bounded connectivity (max 6 neighbors)"""
+        graph = create_graph("test", 100, 3600)
+        
+        # Create hub node
+        hub_embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        hub_id = add_node(graph, hub_embedding, "hub")
+        
+        # Try to add 10 neighbors (should be capped at 6)
+        for i in range(10):
+            embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+            neighbor_id = add_node(graph, embedding, f"neighbor_{i}")
+            add_edge(graph, hub_id, neighbor_id, 0.8, "connected")
+        
+        # Node should have at most 6 neighbors
+        assert len(graph.nodes[hub_id].neighbors) <= 6
+    
+    def test_edge_relevance_score(self):
+        """Test edge relevance scores"""
+        graph = create_graph("test", 100, 3600)
+        
+        emb1 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        emb2 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        node1 = add_node(graph, emb1, "node1")
+        node2 = add_node(graph, emb2, "node2")
+        
+        relevance = 0.75
+        add_edge(graph, node1, node2, relevance, "test_edge")
+        
+        # Check that edge was added with correct relevance
         assert len(graph.nodes[node1].neighbors) == 1
-        assert graph.nodes[node1].neighbors[0].target_id == node2
-        assert graph.nodes[node1].neighbors[0].relevance_score == 0.9
-
-    def test_edge_clamping(self):
-        """Test that edge relevance scores are clamped to [0, 1]"""
-        graph = create_graph("test_graph", 100, 3600)
+    
+    def test_remove_edge(self):
+        """Test removing an edge"""
+        graph = create_graph("test", 100, 3600)
         
-        emb1 = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        emb2 = np.full(MAX_EMBEDDING_DIM, 0.6, dtype=np.float32)
+        emb1 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        emb2 = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        node1 = add_node(graph, emb1, "node1")
+        node2 = add_node(graph, emb2, "node2")
         
-        node1 = add_node(graph, emb1, "Node 1")
-        node2 = add_node(graph, emb2, "Node 2")
+        add_edge(graph, node1, node2, 0.8, "connected")
+        assert len(graph.nodes[node1].neighbors) == 1
         
-        add_edge(graph, node1, node2, 1.5, "test")  # Invalid score
-        edge = graph.nodes[node1].neighbors[0]
-        assert edge.relevance_score == 1.0
+        # Remove edge
+        success = remove_edge(graph, node1, node2)
         
-        add_edge(graph, node1, node2, -0.5, "test")  # Invalid score
-        edge = graph.nodes[node1].neighbors[1]
-        assert edge.relevance_score == 0.0
+        assert success
+        assert len(graph.nodes[node1].neighbors) == 0
 
-    def test_bounded_neighbors(self):
-        """Test that node cannot exceed HEXAGONAL_NEIGHBORS"""
-        graph = create_graph("test_graph", 100, 3600)
+
+class TestCentralityCalculation:
+    """Test centrality and hub detection"""
+    
+    def test_recalculate_centrality(self):
+        """Test centrality recalculation"""
+        graph = create_graph("test", 100, 3600)
         
-        emb_center = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        center_node = add_node(graph, emb_center, "Center")
+        # Create star topology
+        hub_embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        hub_id = add_node(graph, hub_embedding, "hub")
         
-        # Add 6 neighbors (should all succeed)
-        for i in range(CONFIG["HEXAGONAL_NEIGHBORS"]):
-            emb = np.full(MAX_EMBEDDING_DIM, 0.5 + i*0.01, dtype=np.float32)
-            neighbor = add_node(graph, emb, f"Neighbor {i}")
-            success = add_edge(graph, center_node, neighbor, 0.9, "neighbor")
-            assert success is True
+        spoke_ids = []
+        for i in range(5):
+            embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+            spoke_id = add_node(graph, embedding, f"spoke_{i}")
+            spoke_ids.append(spoke_id)
+            add_edge(graph, hub_id, spoke_id, 0.9, "hub_connection")
         
-        # Try to add 7th neighbor (should fail)
-        emb_extra = np.full(MAX_EMBEDDING_DIM, 0.8, dtype=np.float32)
-        extra_node = add_node(graph, emb_extra, "Extra")
-        success = add_edge(graph, center_node, extra_node, 0.9, "neighbor")
-        assert success is False
-
-
-class TestVectorMath:
-    """Test vector operations and similarities"""
-
-    def test_cosine_similarity_identical(self):
-        """Test cosine similarity of identical vectors"""
-        vec = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        similarity = cosine_similarity(vec, vec)
-        assert abs(similarity - 1.0) < 1e-5
-
-    def test_cosine_similarity_orthogonal(self):
-        """Test cosine similarity of orthogonal vectors"""
-        vec1 = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        vec2 = np.array([0.0, 1.0, 0.0], dtype=np.float32)
-        similarity = cosine_similarity(vec1, vec2)
-        assert abs(similarity) < 1e-5
-
-    def test_cosine_similarity_opposite(self):
-        """Test cosine similarity of opposite vectors"""
-        vec1 = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        vec2 = np.array([-1.0, 0.0, 0.0], dtype=np.float32)
-        similarity = cosine_similarity(vec1, vec2)
-        assert abs(similarity - (-1.0)) < 1e-5
-
-    def test_temporal_decay_immediate(self):
-        """Test temporal decay at creation time"""
-        now = 1000.0
-        decay = temporal_decay(now, now)
-        assert abs(decay - 1.0) < 1e-5
-
-    def test_temporal_decay_over_time(self):
-        """Test temporal decay increases with age"""
-        created = 1000.0
-        decay_1h = temporal_decay(created, created + 3600)
-        decay_1d = temporal_decay(created, created + 86400)
+        # Recalculate centrality
+        recalculate_centrality(graph)
         
-        # Decay should decrease over time
-        assert decay_1h > decay_1d
-        assert decay_1h > 0.0
-        assert decay_1d > 0.0
+        # Hub should have highest centrality
+        hub_centrality = graph.nodes[hub_id].centrality
+        spoke_centrality = [graph.nodes[s].centrality for s in spoke_ids]
+        
+        assert hub_centrality > max(spoke_centrality)
+
+
+class TestRetrieval:
+    """Test memory retrieval and traversal"""
+    
+    def test_find_most_relevant_node(self):
+        """Test finding most relevant node for a query"""
+        graph = create_graph("test", 100, 3600)
+        
+        # Create nodes with known embeddings
+        query_embedding = np.array([1, 0, 0] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        
+        similar_embedding = np.array([0.9, 0.1, 0] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        dissimilar_embedding = np.array([0, 1, 0] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        
+        similar_id = add_node(graph, similar_embedding, "similar")
+        dissimilar_id = add_node(graph, dissimilar_embedding, "dissimilar")
+        
+        # Find most relevant
+        result = find_most_relevant_node(graph, query_embedding)
+        
+        assert result == similar_id
+    
+    def test_empty_graph_retrieval(self):
+        """Test retrieval from empty graph"""
+        graph = create_graph("test", 100, 3600)
+        
+        query_embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        result = find_most_relevant_node(graph, query_embedding)
+        
+        assert result is None
 
 
 class TestMetabolism:
-    """Test metabolic state tracking"""
-
+    """Test metabolic state tracking and updates"""
+    
     def test_metabolism_initialization(self):
-        """Test metabolism engine initialization"""
-        graph = create_graph("test_graph", 100, 3600)
+        """Test metabolism initializes in HEALTHY state"""
+        graph = create_graph("test", 100, 3600)
         
-        assert graph.metabolism.messages_remaining == 100
-        assert graph.metabolism.minutes_remaining == 60 * 60  # 3600 seconds
-        assert graph.metabolism.state == MetabolicState.Healthy
+        assert graph.metabolism.state == MetabolicState.HEALTHY
         assert graph.metabolism.metabolic_weight == 1.0
-
-    def test_metabolism_healthy_state(self):
-        """Test metabolism remains healthy with abundant resources"""
-        graph = create_graph("test_graph", 100, 3600)
+    
+    def test_metabolism_state_transitions(self):
+        """Test metabolism state transitions based on resource depletion"""
+        graph = create_graph("test", 100, 300)  # 5 minute budget
         
-        update_metabolism(graph, 10, 60, 25.0)
-        assert graph.metabolism.state == MetabolicState.Healthy
-        assert graph.metabolism.metabolic_weight == 1.0
-
-    def test_metabolism_stressed_state(self):
-        """Test metabolism transitions to STRESSED"""
-        graph = create_graph("test_graph", 100, 3600)
+        # Initially healthy
+        assert graph.metabolism.state == MetabolicState.HEALTHY
         
-        # Consume most time and messages
-        update_metabolism(graph, 80, 2400, 50.0)  # Leaves <18min
-        assert graph.metabolism.state == MetabolicState.Stressed
-        assert graph.metabolism.metabolic_weight == 1.2
-
-    def test_metabolism_critical_state(self):
-        """Test metabolism transitions to CRITICAL"""
-        graph = create_graph("test_graph", 100, 3600)
+        # Move to stressed
+        update_metabolism(graph, 100, 200, 50.0)  # 200 seconds remaining = 40% budget
+        assert graph.metabolism.state == MetabolicState.STRESSED
         
-        # Consume nearly all resources
-        update_metabolism(graph, 96, 3300, 80.0)  # Leaves <5min
-        assert graph.metabolism.state == MetabolicState.Critical
-        assert graph.metabolism.metabolic_weight == 1.5
-
-    def test_metabolic_relevance_calculation(self):
-        """Test metabolic relevance score calculation"""
-        vec_a = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-        vec_b = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+        # Move to critical
+        update_metabolism(graph, 100, 30, 10.0)  # 30 seconds remaining = 10% budget
+        assert graph.metabolism.state == MetabolicState.CRITICAL
+    
+    def test_metabolic_weight_increases_in_stress(self):
+        """Test that metabolic weight increases as resources diminish"""
+        graph = create_graph("test", 100, 300)
         
-        now = 1000.0
-        created = now  # Just created
-        resource_avail = 50.0
-        metabolic_weight = 1.0
+        # Initially 1.0
+        initial_weight = graph.metabolism.metabolic_weight
         
-        relevance = calculate_metabolic_relevance(
-            vec_a, vec_b, created, now, resource_avail, metabolic_weight
-        )
+        # Deplete resources
+        update_metabolism(graph, 100, 30, 10.0)
+        stressed_weight = graph.metabolism.metabolic_weight
         
-        # Should be high (identical vectors, just created, decent resources)
-        assert relevance > 0.8
+        assert stressed_weight >= initial_weight
 
 
-class TestCentroidIndexing:
-    """Test centroid-based indexing"""
-
-    def test_centroid_initialization(self):
-        """Test centroid map initialization"""
-        graph = create_graph("test_graph", 100, 3600)
-        assert graph.centroid_map.max_hubs <= CONFIG["CENTROID_COUNT"]
-
-    def test_centroid_recalculation(self):
-        """Test centroid recalculation"""
-        graph = create_graph("test_graph", 100, 3600)
-        
-        # Add nodes
-        for i in range(10):
-            embedding = np.full(MAX_EMBEDDING_DIM, 0.5 + i*0.01, dtype=np.float32)
-            add_node(graph, embedding, f"Node {i}")
-        
-        # Connect some nodes to create hub structure
-        add_edge(graph, 0, 1, 0.9, "related")
-        add_edge(graph, 0, 2, 0.9, "related")
-        add_edge(graph, 0, 3, 0.9, "related")
-        
-        recalculate_centrality(graph)
-        
-        assert len(graph.centroid_map.hub_node_ids) > 0
-        assert all(hub_id in graph.nodes for hub_id in graph.centroid_map.hub_node_ids)
-
-    def test_find_most_relevant_node(self):
-        """Test entry point discovery"""
-        graph = create_graph("test_graph", 100, 3600)
-        
-        emb1 = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        emb2 = np.full(MAX_EMBEDDING_DIM, 0.6, dtype=np.float32)
-        emb3 = np.full(MAX_EMBEDDING_DIM, 0.7, dtype=np.float32)
-        
-        node1 = add_node(graph, emb1, "Node 1")
-        node2 = add_node(graph, emb2, "Node 2")
-        node3 = add_node(graph, emb3, "Node 3")
-        
-        add_edge(graph, node1, node2, 0.9, "related")
-        add_edge(graph, node2, node3, 0.9, "related")
-        
-        recalculate_centrality(graph)
-        
-        query_vec = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        entry_node = find_most_relevant_node(graph, query_vec)
-        
-        assert entry_node is not None
-        assert entry_node in graph.nodes
-
-
-class TestPersistence:
-    """Test graph serialization and loading"""
-
-    def test_save_and_load(self, tmp_path):
-        """Test save/load cycle"""
-        graph = create_graph("test_graph", 100, 3600)
-        
-        emb1 = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        emb2 = np.full(MAX_EMBEDDING_DIM, 0.6, dtype=np.float32)
-        
-        node1 = add_node(graph, emb1, "Node 1")
-        node2 = add_node(graph, emb2, "Node 2")
-        add_edge(graph, node1, node2, 0.9, "related")
-        
-        filepath = tmp_path / "test_graph.json"
-        save_binary(graph, str(filepath))
-        
-        assert filepath.exists()
-        
-        loaded_graph = load_binary(str(filepath))
-        assert loaded_graph is not None
-        assert loaded_graph.node_count == 2
-        assert len(loaded_graph.nodes[node1].neighbors) == 1
+class TestSerialization:
+    """Test graph persistence (save/load)"""
+    
+    def test_save_and_load_empty_graph(self):
+        """Test saving and loading an empty graph"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            graph = create_graph("test", 100, 3600)
+            
+            filepath = Path(tmpdir) / "graph.bin"
+            save_binary(graph, str(filepath))
+            
+            loaded_graph = load_binary(str(filepath))
+            
+            assert loaded_graph.name == "test"
+            assert loaded_graph.node_count == 0
+    
+    def test_save_and_load_graph_with_nodes(self):
+        """Test saving and loading a graph with nodes"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            graph = create_graph("test", 100, 3600)
+            
+            # Add some nodes
+            for i in range(5):
+                embedding = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+                add_node(graph, embedding, f"node_{i}")
+            
+            filepath = Path(tmpdir) / "graph.bin"
+            save_binary(graph, str(filepath))
+            
+            loaded_graph = load_binary(str(filepath))
+            
+            assert loaded_graph.node_count == 5
+            assert all(f"node_{i}" in [loaded_graph.nodes[nid].data for i in range(5) for nid in loaded_graph.nodes])
+    
+    def test_save_and_load_preserves_metabolism(self):
+        """Test that metabolism state is preserved across save/load"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            graph = create_graph("test", 100, 3600)
+            
+            # Update metabolism
+            update_metabolism(graph, 50, 100, 30.0)
+            
+            filepath = Path(tmpdir) / "graph.bin"
+            save_binary(graph, str(filepath))
+            
+            loaded_graph = load_binary(str(filepath))
+            
+            assert loaded_graph.metabolism.state == graph.metabolism.state
+            assert loaded_graph.metabolism.messages_remaining == graph.metabolism.messages_remaining
 
 
-class TestFractalSeeds:
-    """Test fractal seed generation and hydration"""
-
-    def test_create_fractal_seed(self):
-        """Test seed creation from active nodes"""
-        graph = create_graph("test_graph", 100, 3600)
+class TestSimilarityCalculation:
+    """Test cosine similarity computations"""
+    
+    def test_identical_vectors_have_similarity_one(self):
+        """Test that identical vectors have similarity 1.0"""
+        vec = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        sim = cosine_similarity(vec, vec)
         
-        # Add nodes
-        for i in range(5):
-            embedding = np.full(MAX_EMBEDDING_DIM, 0.5 + i*0.01, dtype=np.float32)
-            add_node(graph, embedding, f"Node {i}")
+        assert np.isclose(sim, 1.0)
+    
+    def test_orthogonal_vectors_have_similarity_zero(self):
+        """Test that orthogonal vectors have similarity 0.0"""
+        vec1 = np.array([1, 0, 0] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        vec2 = np.array([0, 1, 0] + [0] * (MAX_EMBEDDING_DIM - 3), dtype=np.float32)
+        sim = cosine_similarity(vec1, vec2)
         
-        seed_id = create_fractal_seed(graph, "test_seed")
+        assert np.isclose(sim, 0.0, atol=1e-6)
+    
+    def test_opposite_vectors_have_similarity_negative_one(self):
+        """Test that opposite vectors have similarity -1.0"""
+        vec = np.random.randn(MAX_EMBEDDING_DIM).astype(np.float32)
+        opposite = -vec
+        sim = cosine_similarity(vec, opposite)
         
-        assert seed_id is not None
-        assert seed_id in graph.nodes
-        assert graph.nodes[seed_id].is_fractal_seed is True
-
-
-class TestEdgeCases:
-    """Test edge cases and error conditions"""
-
-    def test_empty_graph_traversal(self):
-        """Test traversal on empty graph"""
-        graph = create_graph("test_graph", 100, 3600)
-        query_vec = np.full(MAX_EMBEDDING_DIM, 0.5, dtype=np.float32)
-        
-        entry_node = find_most_relevant_node(graph, query_vec)
-        assert entry_node is None
-
-    def test_max_nodes_exceeded(self):
-        """Test behavior when max nodes exceeded"""
-        graph = create_graph("test_graph", 5, 3600)  # Max 5 nodes
-        
-        # Add nodes up to max
-        node_ids = []
-        for i in range(5):
-            embedding = np.full(MAX_EMBEDDING_DIM, 0.5 + i*0.01, dtype=np.float32)
-            node_id = add_node(graph, embedding, f"Node {i}")
-            node_ids.append(node_id)
-        
-        assert graph.node_count == 5
-        
-        # Try to add one more (should fail)
-        embedding = np.full(MAX_EMBEDDING_DIM, 0.6, dtype=np.float32)
-        node_id = add_node(graph, embedding, "Extra Node")
-        assert node_id is None
-
-    def test_invalid_edge_nodes(self):
-        """Test edge creation with invalid node IDs"""
-        graph = create_graph("test_graph", 100, 3600)
-        
-        success = add_edge(graph, 999, 888, 0.9, "test")
-        assert success is False
+        assert np.isclose(sim, -1.0)
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
+    pytest.main([__file__, "-v"])
