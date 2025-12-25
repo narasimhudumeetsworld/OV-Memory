@@ -116,7 +116,7 @@ jobs:
           cat BENCHMARK_RESULTS.md
       
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
           path: BENCHMARK_RESULTS.md
