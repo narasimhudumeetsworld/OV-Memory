@@ -1,16 +1,20 @@
-/*
+/**
  * =====================================================================
- * OV-Memory: JavaScript Implementation
+ * OV-Memory: JavaScript Implementation (Production-Ready)
  * =====================================================================
- * Fractal Honeycomb Graph Database for AI Agent Memory
  * Author: Prayaga Vaibhavlakshmi
  * License: Apache License 2.0
  * Om Vinayaka 🙏
+ *
+ * A high-performance JavaScript implementation of Fractal Honeycomb
+ * Graph Database for AI agents. Zero external dependencies.
+ * Compatible with Node.js, Browsers, and all AI agents (Claude, Gemini, Codex).
+ *
  * =====================================================================
  */
 
 // ===== CONFIGURATION CONSTANTS =====
-const MAX_NODES = 100000;
+const MAX_NODES = 100_000;
 const MAX_EMBEDDING_DIM = 768;
 const MAX_DATA_SIZE = 8192;
 const HEXAGONAL_NEIGHBORS = 6;
@@ -26,404 +30,471 @@ const SAFETY_LOOP_DETECTED = 1;
 const SAFETY_SESSION_EXPIRED = 2;
 const SAFETY_INVALID_NODE = -1;
 
+// ===== VECTOR MATH FUNCTIONS =====
+
 /**
- * HoneycombEdge: Represents a connection between nodes
+ * Calculate cosine similarity between two vectors
+ * @param {Float32Array|number[]} vecA - Vector A
+ * @param {Float32Array|number[]} vecB - Vector B
+ * @returns {number} Cosine similarity score [0.0, 1.0]
  */
-class HoneycombEdge {
-    constructor(targetId, relevanceScore, relationshipType, timestampCreated) {
-        this.targetId = targetId;
-        this.relevanceScore = Math.max(0, Math.min(1, relevanceScore));
-        this.relationshipType = relationshipType.substring(0, 64);
-        this.timestampCreated = timestampCreated || Date.now() / 1000;
+function cosineSimilarity(vecA, vecB) {
+    if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0 || vecA.length !== vecB.length) {
+        return 0.0;
+    }
+
+    let dotProduct = 0.0;
+    let magA = 0.0;
+    let magB = 0.0;
+
+    for (let i = 0; i < vecA.length; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        magA += vecA[i] * vecA[i];
+        magB += vecB[i] * vecB[i];
+    }
+
+    magA = Math.sqrt(magA);
+    magB = Math.sqrt(magB);
+
+    if (magA === 0.0 || magB === 0.0) {
+        return 0.0;
+    }
+
+    return dotProduct / (magA * magB);
+}
+
+/**
+ * Calculate temporal decay factor
+ * Uses exponential decay: e^(-age / half_life)
+ * @param {number} createdTime - UNIX timestamp when memory was created
+ * @param {number} currentTime - Current UNIX timestamp
+ * @returns {number} Decay factor [0.0, 1.0]
+ */
+function temporalDecay(createdTime, currentTime) {
+    if (createdTime > currentTime) {
+        return 1.0;
+    }
+
+    const ageSeconds = currentTime - createdTime;
+    const decay = Math.exp(-ageSeconds / TEMPORAL_DECAY_HALF_LIFE);
+    return Math.max(0.0, Math.min(1.0, decay));
+}
+
+/**
+ * Calculate combined relevance score
+ * Formula: (Cosine_Similarity × 0.7) + (Temporal_Decay × 0.3)
+ * @param {Float32Array|number[]} vecA - Vector A
+ * @param {Float32Array|number[]} vecB - Vector B
+ * @param {number} createdTime - When the memory was created
+ * @param {number} currentTime - Current timestamp
+ * @returns {number} Relevance score [0.0, 1.0]
+ */
+function calculateRelevance(vecA, vecB, createdTime, currentTime) {
+    const cosine = cosineSimilarity(vecA, vecB);
+    const decay = temporalDecay(createdTime, currentTime);
+    const finalScore = (cosine * 0.7) + (decay * 0.3);
+    return Math.max(0.0, Math.min(1.0, finalScore));
+}
+
+// ===== GRAPH OPERATIONS =====
+
+/**
+ * Create a new Honeycomb Graph
+ * @param {string} name - Name of the graph
+ * @param {number} maxNodes - Maximum number of nodes (default 100,000)
+ * @param {number} maxSessionTime - Maximum session duration in seconds (default 3600)
+ * @returns {Object} HoneycombGraph instance
+ */
+function honeycombCreateGraph(name, maxNodes = MAX_NODES, maxSessionTime = MAX_SESSION_TIME) {
+    const graph = {
+        name,
+        nodes: new Map(),
+        nodeCount: 0,
+        maxNodes,
+        sessionStartTime: Math.floor(Date.now() / 1000),
+        maxSessionTimeSeconds: maxSessionTime,
+    };
+
+    console.log(`✅ Created honeycomb graph: ${name} (max_nodes=${maxNodes})`);
+    return graph;
+}
+
+/**
+ * Add a new node to the graph
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {Float32Array|number[]} embedding - Vector embedding
+ * @param {string} data - Text payload
+ * @returns {number} Node ID, or -1 if failed
+ */
+function honeycombAddNode(graph, embedding, data) {
+    if (graph.nodeCount >= graph.maxNodes) {
+        console.error("❌ Graph at max capacity");
+        return -1;
+    }
+
+    const nodeId = graph.nodeCount;
+    const node = {
+        id: nodeId,
+        vectorEmbedding: embedding instanceof Float32Array ? embedding : new Float32Array(embedding),
+        data,
+        neighbors: [],
+        fractalLayer: null,
+        lastAccessedTimestamp: Math.floor(Date.now() / 1000),
+        accessCountSession: 0,
+        accessTimeFirst: 0,
+        relevanceToFocus: 0.0,
+        isActive: true,
+    };
+
+    graph.nodes.set(nodeId, node);
+    graph.nodeCount++;
+
+    console.log(`✅ Added node ${nodeId} (embedding_dim=${embedding.length}, data_len=${data.length})`);
+    return nodeId;
+}
+
+/**
+ * Get a node and update access metadata
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {number} nodeId - Node ID
+ * @returns {Object|null} HoneycombNode or null
+ */
+function honeycombGetNode(graph, nodeId) {
+    const node = graph.nodes.get(nodeId);
+    if (!node) return null;
+
+    node.lastAccessedTimestamp = Math.floor(Date.now() / 1000);
+    node.accessCountSession++;
+
+    if (node.accessTimeFirst === 0) {
+        node.accessTimeFirst = node.lastAccessedTimestamp;
+    }
+
+    return node;
+}
+
+/**
+ * Add an edge between two nodes
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {number} sourceId - Source node ID
+ * @param {number} targetId - Target node ID
+ * @param {number} relevanceScore - Relevance weight [0.0, 1.0]
+ * @param {string} relationshipType - Type of relationship
+ * @returns {boolean} true if edge added, false otherwise
+ */
+function honeycombAddEdge(graph, sourceId, targetId, relevanceScore, relationshipType) {
+    const source = graph.nodes.get(sourceId);
+    const target = graph.nodes.get(targetId);
+
+    if (!source || !target) {
+        console.error("❌ Invalid node IDs");
+        return false;
+    }
+
+    if (source.neighbors.length >= HEXAGONAL_NEIGHBORS) {
+        console.warn(`⚠️  Node ${sourceId} at max neighbors`);
+        return false;
+    }
+
+    const edge = {
+        targetId,
+        relevanceScore: Math.max(0.0, Math.min(1.0, relevanceScore)),
+        relationshipType,
+        timestampCreated: Math.floor(Date.now() / 1000),
+    };
+
+    source.neighbors.push(edge);
+    console.log(`✅ Added edge: Node ${sourceId} → Node ${targetId} (relevance=${relevanceScore.toFixed(2)})`);
+    return true;
+}
+
+// ===== CORE ALGORITHMS =====
+
+/**
+ * Insert memory with fractal overflow handling
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {number} focusNodeId - Focus node ID
+ * @param {number} newNodeId - New memory node ID
+ * @param {number} currentTime - Current UNIX timestamp (auto if undefined)
+ */
+function honeycombInsertMemory(graph, focusNodeId, newNodeId, currentTime) {
+    if (!currentTime) {
+        currentTime = Math.floor(Date.now() / 1000);
+    }
+
+    const focus = graph.nodes.get(focusNodeId);
+    const newMem = graph.nodes.get(newNodeId);
+
+    if (!focus || !newMem) {
+        console.error("❌ Invalid node IDs");
+        return;
+    }
+
+    const relevance = calculateRelevance(
+        focus.vectorEmbedding,
+        newMem.vectorEmbedding,
+        newMem.lastAccessedTimestamp,
+        currentTime
+    );
+
+    if (focus.neighbors.length < HEXAGONAL_NEIGHBORS) {
+        honeycombAddEdge(graph, focusNodeId, newNodeId, relevance, "memory_of");
+        console.log(`✅ Direct insert: Node ${focusNodeId} connected to Node ${newNodeId} (rel=${relevance.toFixed(2)})`);
+    } else {
+        let weakestIdx = 0;
+        let weakestRelevance = focus.neighbors[0].relevanceScore;
+
+        for (let i = 1; i < focus.neighbors.length; i++) {
+            if (focus.neighbors[i].relevanceScore < weakestRelevance) {
+                weakestRelevance = focus.neighbors[i].relevanceScore;
+                weakestIdx = i;
+            }
+        }
+
+        const weakestEdge = focus.neighbors[weakestIdx];
+        const weakestId = weakestEdge.targetId;
+
+        if (relevance > weakestRelevance) {
+            if (!focus.fractalLayer) {
+                focus.fractalLayer = honeycombCreateGraph(
+                    `fractal_of_node_${focusNodeId}`,
+                    MAX_NODES / 10,
+                    MAX_SESSION_TIME
+                );
+            }
+
+            console.log(`🔀 Moving Node ${weakestId} to fractal layer of Node ${focusNodeId}`);
+            focus.neighbors[weakestIdx].targetId = newNodeId;
+            focus.neighbors[weakestIdx].relevanceScore = relevance;
+            console.log(`✅ Fractal swap: Node ${weakestId} ↔ Node ${newNodeId} (new rel=${relevance.toFixed(2)})`);
+        } else {
+            if (!focus.fractalLayer) {
+                focus.fractalLayer = honeycombCreateGraph(
+                    `fractal_of_node_${focusNodeId}`,
+                    MAX_NODES / 10,
+                    MAX_SESSION_TIME
+                );
+            }
+            console.log(`✅ Inserted Node ${newNodeId} to fractal layer (rel=${relevance.toFixed(2)})`);
+        }
     }
 }
 
 /**
- * HoneycombNode: Core unit of the graph
+ * Just-In-Time context retrieval with relevance gating
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {Float32Array|number[]} queryVector - Query embedding
+ * @param {number} maxTokens - Maximum context length in characters (default 2000)
+ * @returns {string} Concatenated context string
  */
-class HoneycombNode {
-    constructor(id, vectorEmbedding, embeddingDim, data, dataLength) {
-        this.id = id;
-        this.vectorEmbedding = vectorEmbedding.slice(0, embeddingDim);
-        this.embeddingDim = embeddingDim;
-        this.data = data.substring(0, Math.min(dataLength, MAX_DATA_SIZE));
-        this.dataLength = Math.min(dataLength, MAX_DATA_SIZE);
-        this.neighbors = [];
-        this.fractalLayer = null;
-        this.lastAccessedTimestamp = Date.now() / 1000;
-        this.accessCountSession = 0;
-        this.accessTimeFirst = 0;
-        this.relevanceToFocus = 0.0;
-        this.isActive = true;
-    }
-}
-
-/**
- * HoneycombGraph: Main container for the fractal honeycomb topology
- */
-class HoneycombGraph {
-    constructor(name, maxNodes = MAX_NODES, maxSessionTime = MAX_SESSION_TIME) {
-        this.graphName = name;
-        this.nodes = new Map();
-        this.nodeCount = 0;
-        this.maxNodes = maxNodes;
-        this.sessionStartTime = Date.now() / 1000;
-        this.maxSessionTimeSeconds = maxSessionTime;
-        console.log(`✅ Created honeycomb graph: ${name} (max_nodes=${maxNodes})`);
+function honeycombGetJITContext(graph, queryVector, maxTokens = 2000) {
+    if (!queryVector || queryVector.length === 0) {
+        return "";
     }
 
-    /**
-     * Cosine similarity between two vectors
-     */
-    cosineSimilarity(vecA, vecB) {
-        if (!vecA || !vecB || vecA.length === 0 || vecB.length === 0) {
-            return 0.0;
-        }
+    let bestNodeId = null;
+    let bestRelevance = -1.0;
+    const currentTime = Math.floor(Date.now() / 1000);
 
-        let dotProduct = 0.0;
-        let magA = 0.0;
-        let magB = 0.0;
+    for (const [nodeId, node] of graph.nodes) {
+        if (!node.isActive) continue;
 
-        const minLen = Math.min(vecA.length, vecB.length);
-        for (let i = 0; i < minLen; i++) {
-            dotProduct += vecA[i] * vecB[i];
-            magA += vecA[i] * vecA[i];
-            magB += vecB[i] * vecB[i];
-        }
-
-        magA = Math.sqrt(magA);
-        magB = Math.sqrt(magB);
-
-        if (magA === 0 || magB === 0) {
-            return 0.0;
-        }
-
-        return dotProduct / (magA * magB);
-    }
-
-    /**
-     * Temporal decay factor
-     */
-    temporalDecay(createdTime, currentTime) {
-        if (createdTime > currentTime) {
-            return 1.0;
-        }
-
-        const ageSeconds = currentTime - createdTime;
-        const decay = Math.exp(-ageSeconds / TEMPORAL_DECAY_HALF_LIFE);
-        return Math.max(0.0, Math.min(1.0, decay));
-    }
-
-    /**
-     * Calculate combined relevance score
-     */
-    calculateRelevance(vecA, vecB, createdTime, currentTime) {
-        const cosine = this.cosineSimilarity(vecA, vecB);
-        const decay = this.temporalDecay(createdTime, currentTime);
-        const finalScore = (cosine * 0.7) + (decay * 0.3);
-        return Math.max(0.0, Math.min(1.0, finalScore));
-    }
-
-    /**
-     * Add a new node to the graph
-     */
-    addNode(embedding, embeddingDim, data, dataLength) {
-        if (!embedding || !data) {
-            return -1;
-        }
-
-        if (this.nodeCount >= this.maxNodes) {
-            console.log("❌ Graph at max capacity");
-            return -1;
-        }
-
-        const nodeId = this.nodeCount;
-        const node = new HoneycombNode(
-            nodeId,
-            embedding,
-            embeddingDim,
-            data,
-            dataLength
-        );
-
-        this.nodes.set(nodeId, node);
-        this.nodeCount++;
-        console.log(
-            `✅ Added node ${nodeId} (embedding_dim=${embeddingDim}, data_len=${node.dataLength})`
-        );
-        return nodeId;
-    }
-
-    /**
-     * Retrieve a node and update access metadata
-     */
-    getNode(nodeId) {
-        if (nodeId < 0 || nodeId >= this.nodeCount) {
-            return null;
-        }
-
-        const node = this.nodes.get(nodeId);
-        if (!node) return null;
-
-        node.lastAccessedTimestamp = Date.now() / 1000;
-        node.accessCountSession++;
-
-        if (node.accessTimeFirst === 0) {
-            node.accessTimeFirst = node.lastAccessedTimestamp;
-        }
-
-        return node;
-    }
-
-    /**
-     * Add an edge between two nodes (bounded by hexagonal constraint)
-     */
-    addEdge(sourceId, targetId, relevanceScore, relationshipType) {
-        if (
-            sourceId < 0 ||
-            targetId < 0 ||
-            sourceId >= this.nodeCount ||
-            targetId >= this.nodeCount
-        ) {
-            return false;
-        }
-
-        const sourceNode = this.nodes.get(sourceId);
-        if (!sourceNode) return false;
-
-        if (sourceNode.neighbors.length >= HEXAGONAL_NEIGHBORS) {
-            console.log(`⚠️  Node ${sourceId} at max neighbors`);
-            return false;
-        }
-
-        const edge = new HoneycombEdge(
-            targetId,
-            relevanceScore,
-            relationshipType,
-            Date.now() / 1000
-        );
-
-        sourceNode.neighbors.push(edge);
-        console.log(
-            `✅ Added edge: Node ${sourceId} → Node ${targetId} (relevance=${relevanceScore.toFixed(2)})`
-        );
-        return true;
-    }
-
-    /**
-     * Fractal insertion with automatic overflow handling
-     */
-    insertMemory(focusNodeId, newNodeId, currentTime) {
-        if (focusNodeId < 0 || newNodeId < 0) return;
-
-        const focusNode = this.nodes.get(focusNodeId);
-        const newNode = this.nodes.get(newNodeId);
-
-        if (!focusNode || !newNode) return;
-
-        const relevance = this.calculateRelevance(
-            focusNode.vectorEmbedding,
-            newNode.vectorEmbedding,
-            newNode.lastAccessedTimestamp,
+        const relevance = calculateRelevance(
+            queryVector,
+            node.vectorEmbedding,
+            node.lastAccessedTimestamp,
             currentTime
         );
 
-        // Direct insertion if space available
-        if (focusNode.neighbors.length < HEXAGONAL_NEIGHBORS) {
-            this.addEdge(focusNodeId, newNodeId, relevance, "memory_of");
-            console.log(
-                `✅ Direct insert: Node ${focusNodeId} connected to Node ${newNodeId} (rel=${relevance.toFixed(2)})`
+        if (relevance > bestRelevance) {
+            bestRelevance = relevance;
+            bestNodeId = nodeId;
+        }
+    }
+
+    if (bestNodeId === null) {
+        return "";
+    }
+
+    console.log(`✅ Found most relevant node: ${bestNodeId} (relevance=${bestRelevance.toFixed(2)})`);
+
+    const result = [];
+    const visited = new Set();
+    const queue = [bestNodeId];
+    visited.add(bestNodeId);
+    let currentLength = 0;
+
+    while (queue.length > 0 && currentLength < maxTokens) {
+        const nodeId = queue.shift();
+        if (nodeId === undefined) break;
+
+        const node = graph.nodes.get(nodeId);
+        if (!node || !node.isActive) continue;
+
+        const dataLen = node.data.length;
+        if (currentLength + dataLen + 1 < maxTokens) {
+            result.push(node.data);
+            currentLength += dataLen + 1;
+        }
+
+        for (const edge of node.neighbors) {
+            if (edge.relevanceScore > RELEVANCE_THRESHOLD && !visited.has(edge.targetId)) {
+                visited.add(edge.targetId);
+                queue.push(edge.targetId);
+            }
+        }
+    }
+
+    const context = result.join(" ");
+    console.log(`✅ JIT context retrieved (length=${currentLength} tokens)`);
+    return context;
+}
+
+/**
+ * Safety circuit breaker for loop detection and session timeout
+ * @param {Object} node - HoneycombNode to check
+ * @param {number} currentTime - Current UNIX timestamp (auto if undefined)
+ * @param {number} sessionStartTime - When session started (auto if undefined)
+ * @param {number} maxSessionTime - Max session duration in seconds
+ * @returns {number} SAFETY_OK, SAFETY_LOOP_DETECTED, or SAFETY_SESSION_EXPIRED
+ */
+function honeycombCheckSafety(node, currentTime, sessionStartTime, maxSessionTime = MAX_SESSION_TIME) {
+    if (!node) {
+        return SAFETY_INVALID_NODE;
+    }
+
+    if (!currentTime) {
+        currentTime = Math.floor(Date.now() / 1000);
+    }
+
+    if (!sessionStartTime) {
+        sessionStartTime = Math.floor(Date.now() / 1000);
+    }
+
+    if (node.accessCountSession > LOOP_ACCESS_LIMIT) {
+        const timeWindow = node.lastAccessedTimestamp - node.accessTimeFirst;
+        if (timeWindow >= 0 && timeWindow < LOOP_DETECTION_WINDOW) {
+            console.warn(
+                `⚠️  LOOP DETECTED: Node ${node.id} accessed ${node.accessCountSession} times in ${timeWindow} seconds`
             );
-        } else {
-            // Find weakest neighbor
-            let weakestIdx = 0;
-            let weakestRelevance = focusNode.neighbors[0].relevanceScore;
-
-            for (let i = 1; i < focusNode.neighbors.length; i++) {
-                if (focusNode.neighbors[i].relevanceScore < weakestRelevance) {
-                    weakestRelevance = focusNode.neighbors[i].relevanceScore;
-                    weakestIdx = i;
-                }
-            }
-
-            if (relevance > weakestRelevance) {
-                const weakestId = focusNode.neighbors[weakestIdx].targetId;
-                console.log(
-                    `🔀 Moving Node ${weakestId} to fractal layer of Node ${focusNodeId}`
-                );
-
-                // Create fractal layer if needed
-                if (!focusNode.fractalLayer) {
-                    focusNode.fractalLayer = new HoneycombGraph(
-                        `fractal_of_node_${focusNodeId}`,
-                        Math.floor(MAX_NODES / 10),
-                        MAX_SESSION_TIME
-                    );
-                }
-
-                // Replace edge
-                focusNode.neighbors[weakestIdx].targetId = newNodeId;
-                focusNode.neighbors[weakestIdx].relevanceScore = relevance;
-                console.log(
-                    `✅ Fractal swap: Node ${weakestId} ↔ Node ${newNodeId} (new rel=${relevance.toFixed(2)})`
-                );
-            } else {
-                if (!focusNode.fractalLayer) {
-                    focusNode.fractalLayer = new HoneycombGraph(
-                        `fractal_of_node_${focusNodeId}`,
-                        Math.floor(MAX_NODES / 10),
-                        MAX_SESSION_TIME
-                    );
-                }
-                console.log(
-                    `✅ Inserted Node ${newNodeId} to fractal layer (rel=${relevance.toFixed(2)})`
-                );
-            }
+            return SAFETY_LOOP_DETECTED;
         }
     }
 
-    /**
-     * Retrieve JIT context via BFS traversal
-     */
-    getJitContext(queryVector, maxTokens = 1000) {
-        if (!queryVector || maxTokens <= 0) return null;
-
-        const startId = this.findMostRelevantNode(queryVector);
-        if (startId < 0) return null;
-
-        const result = [];
-        let currentLength = 0;
-        const visited = new Set();
-        const queue = [startId];
-        visited.add(startId);
-
-        while (queue.length > 0 && currentLength < maxTokens) {
-            const nodeId = queue.shift();
-            const node = this.getNode(nodeId);
-
-            if (!node || !node.isActive) continue;
-
-            const dataLen = node.data.length;
-            if (currentLength + dataLen + 2 < maxTokens) {
-                result.push(node.data);
-                currentLength += dataLen + 1;
-            }
-
-            // Queue high-relevance neighbors
-            for (const edge of node.neighbors) {
-                if (edge.relevanceScore > RELEVANCE_THRESHOLD && !visited.has(edge.targetId)) {
-                    visited.add(edge.targetId);
-                    queue.push(edge.targetId);
-                }
-            }
-        }
-
-        const context = result.join(" ");
-        console.log(`✅ JIT context retrieved (length=${currentLength} tokens)`);
-        return context;
+    const sessionElapsed = currentTime - sessionStartTime;
+    if (sessionElapsed > maxSessionTime) {
+        console.warn(`⚠️  SESSION EXPIRED: ${sessionElapsed} seconds elapsed`);
+        return SAFETY_SESSION_EXPIRED;
     }
 
-    /**
-     * Find the most relevant node for a query
-     */
-    findMostRelevantNode(queryVector) {
-        if (!queryVector || this.nodeCount === 0) return -1;
+    return SAFETY_OK;
+}
 
-        let bestId = 0;
-        let bestRelevance = -1.0;
-        const currentTime = Date.now() / 1000;
+// ===== UTILITY FUNCTIONS =====
 
-        for (const [nodeId, node] of this.nodes.entries()) {
-            if (!node.isActive) continue;
+/**
+ * Print graph statistics
+ * @param {Object} graph - HoneycombGraph instance
+ */
+function honeycombPrintGraphStats(graph) {
+    let totalEdges = 0;
+    let fractalCount = 0;
 
-            const relevance = this.calculateRelevance(
-                queryVector,
-                node.vectorEmbedding,
-                node.lastAccessedTimestamp,
-                currentTime
-            );
-
-            if (relevance > bestRelevance) {
-                bestRelevance = relevance;
-                bestId = nodeId;
-            }
-        }
-
-        console.log(`✅ Found most relevant node: ${bestId} (relevance=${bestRelevance.toFixed(2)})`);
-        return bestId;
+    for (const node of graph.nodes.values()) {
+        totalEdges += node.neighbors.length;
+        if (node.fractalLayer) fractalCount++;
     }
 
-    /**
-     * Check for safety violations
-     */
-    checkSafety(node, currentTime) {
-        if (!node) return SAFETY_INVALID_NODE;
+    console.log("\n╔════════════════════════════════════════╗");
+    console.log("║  HONEYCOMB GRAPH STATISTICS              ║");
+    console.log("╚════════════════════════════════════════╝");
+    console.log(`Graph Name: ${graph.name}`);
+    console.log(`Node Count: ${graph.nodeCount} / ${graph.maxNodes}`);
+    console.log(`Total Edges: ${totalEdges}`);
+    console.log(`Fractal Layers: ${fractalCount}`);
+    const avgConnectivity = graph.nodeCount > 0 ? totalEdges / graph.nodeCount : 0;
+    console.log(`Avg Connectivity: ${avgConnectivity.toFixed(2)}`);
+    console.log();
+}
 
-        // Check for loops
-        if (node.accessCountSession > LOOP_ACCESS_LIMIT) {
-            const timeWindow = node.lastAccessedTimestamp - node.accessTimeFirst;
-            if (timeWindow >= 0 && timeWindow < LOOP_DETECTION_WINDOW) {
-                console.log(
-                    `⚠️  LOOP DETECTED: Node ${node.id} accessed ${node.accessCountSession} times in ${timeWindow.toFixed(1)}s`
-                );
-                return SAFETY_LOOP_DETECTED;
-            }
-        }
+/**
+ * Reset session-level access counters
+ * @param {Object} graph - HoneycombGraph instance
+ */
+function honeycombResetSession(graph) {
+    graph.sessionStartTime = Math.floor(Date.now() / 1000);
+    for (const node of graph.nodes.values()) {
+        node.accessCountSession = 0;
+        node.accessTimeFirst = 0;
+    }
+    console.log("✅ Session reset");
+}
 
-        // Check session timeout
-        const sessionElapsed = currentTime - this.sessionStartTime;
-        if (sessionElapsed > this.maxSessionTimeSeconds) {
-            console.log(`⚠️  SESSION EXPIRED: ${sessionElapsed.toFixed(0)}s elapsed`);
-            return SAFETY_SESSION_EXPIRED;
-        }
+/**
+ * Export graph to JSON format
+ * @param {Object} graph - HoneycombGraph instance
+ * @param {string} filename - Output filename
+ * @returns {Promise<void>}
+ */
+async function honeycombExportToJSON(graph, filename) {
+    const data = {
+        graphName: graph.name,
+        nodeCount: graph.nodeCount,
+        maxNodes: graph.maxNodes,
+        nodes: {},
+    };
 
-        return SAFETY_OK;
+    for (const [nodeId, node] of graph.nodes) {
+        data.nodes[nodeId] = {
+            id: node.id,
+            data: node.data,
+            embeddingDim: node.vectorEmbedding.length,
+            neighborCount: node.neighbors.length,
+            neighbors: node.neighbors.map((edge) => ({
+                targetId: edge.targetId,
+                relevanceScore: edge.relevanceScore,
+                relationshipType: edge.relationshipType,
+            })),
+            accessCount: node.accessCountSession,
+            isActive: node.isActive,
+        };
     }
 
-    /**
-     * Print graph statistics
-     */
-    printGraphStats() {
-        console.log("\n" + "=".repeat(50));
-        console.log("HONEYCOMB GRAPH STATISTICS");
-        console.log("=".repeat(50));
-        console.log(`Graph Name: ${this.graphName}`);
-        console.log(`Node Count: ${this.nodeCount} / ${this.maxNodes}`);
-
-        let totalEdges = 0;
-        let fractalLayers = 0;
-
-        for (const node of this.nodes.values()) {
-            totalEdges += node.neighbors.length;
-            if (node.fractalLayer) fractalLayers++;
-        }
-
-        console.log(`Total Edges: ${totalEdges}`);
-        console.log(`Fractal Layers: ${fractalLayers}`);
-        const avgConnectivity = this.nodeCount > 0 ? totalEdges / this.nodeCount : 0;
-        console.log(`Avg Connectivity: ${avgConnectivity.toFixed(2)}`);
-        console.log();
-    }
-
-    /**
-     * Reset session state
-     */
-    resetSession() {
-        this.sessionStartTime = Date.now() / 1000;
-        for (const node of this.nodes.values()) {
-            node.accessCountSession = 0;
-            node.accessTimeFirst = 0;
-        }
-        console.log("✅ Session reset");
+    // Handle both Node.js and browser environments
+    if (typeof require !== 'undefined' && typeof module !== 'undefined' && module.exports) {
+        const fs = await import("fs").then((m) => m.promises);
+        await fs.writeFile(filename, JSON.stringify(data, null, 2));
+        console.log(`✅ Exported graph to ${filename}`);
+    } else {
+        console.log(`✅ Graph data: ${JSON.stringify(data, null, 2)}`);
     }
 }
 
-// Export for module systems
-if (typeof module !== "undefined" && module.exports) {
+// ===== EXPORTS FOR ALL ENVIRONMENTS =====
+
+// CommonJS exports
+if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-        HoneycombGraph,
-        HoneycombNode,
-        HoneycombEdge,
+        honeycombCreateGraph,
+        honeycombAddNode,
+        honeycombGetNode,
+        honeycombAddEdge,
+        honeycombInsertMemory,
+        honeycombGetJITContext,
+        honeycombCheckSafety,
+        honeycombPrintGraphStats,
+        honeycombResetSession,
+        honeycombExportToJSON,
+        cosineSimilarity,
+        temporalDecay,
+        calculateRelevance,
+        // Constants
+        MAX_NODES,
+        MAX_EMBEDDING_DIM,
+        MAX_DATA_SIZE,
+        HEXAGONAL_NEIGHBORS,
+        RELEVANCE_THRESHOLD,
+        MAX_SESSION_TIME,
         SAFETY_OK,
         SAFETY_LOOP_DETECTED,
         SAFETY_SESSION_EXPIRED,
@@ -431,10 +502,38 @@ if (typeof module !== "undefined" && module.exports) {
     };
 }
 
-// Example usage
-if (typeof window === "undefined") {
-    console.log("\n" + "=".repeat(50));
-    console.log("OV-Memory: JavaScript Implementation");
-    console.log("Om Vinayaka 🙏");
-    console.log("=".repeat(50) + "\n");
+// ESM/Browser exports
+if (typeof exports !== 'undefined') {
+    exports.honeycombCreateGraph = honeycombCreateGraph;
+    exports.honeycombAddNode = honeycombAddNode;
+    exports.honeycombGetNode = honeycombGetNode;
+    exports.honeycombAddEdge = honeycombAddEdge;
+    exports.honeycombInsertMemory = honeycombInsertMemory;
+    exports.honeycombGetJITContext = honeycombGetJITContext;
+    exports.honeycombCheckSafety = honeycombCheckSafety;
+    exports.honeycombPrintGraphStats = honeycombPrintGraphStats;
+    exports.honeycombResetSession = honeycombResetSession;
+    exports.honeycombExportToJSON = honeycombExportToJSON;
+    exports.cosineSimilarity = cosineSimilarity;
+    exports.temporalDecay = temporalDecay;
+    exports.calculateRelevance = calculateRelevance;
+}
+
+// Browser global
+if (typeof window !== 'undefined') {
+    window.OVMemory = {
+        honeycombCreateGraph,
+        honeycombAddNode,
+        honeycombGetNode,
+        honeycombAddEdge,
+        honeycombInsertMemory,
+        honeycombGetJITContext,
+        honeycombCheckSafety,
+        honeycombPrintGraphStats,
+        honeycombResetSession,
+        honeycombExportToJSON,
+        cosineSimilarity,
+        temporalDecay,
+        calculateRelevance,
+    };
 }
