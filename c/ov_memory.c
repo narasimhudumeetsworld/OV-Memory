@@ -47,7 +47,7 @@ float temporal_decay(long created_time, long current_time) {
 
 /* ===== CALCULATE RELEVANCE (COMBINED SCORE) ===== */
 float calculate_relevance(float* vec_a, float* vec_b, int dim,
-                         long created_time, long current_time) {
+                                 long created_time, long current_time) {
     float cosine = cosine_similarity(vec_a, vec_b, dim);
     float decay = temporal_decay(created_time, current_time);
     
@@ -110,7 +110,7 @@ void honeycomb_free_graph(HoneycombGraph* graph) {
 
 /* ===== ADD NODE ===== */
 int honeycomb_add_node(HoneycombGraph* graph, float* embedding, int embedding_dim,
-                      const char* data, int data_length) {
+                          const char* data, int data_length) {
     if (!graph || !embedding || !data) return -1;
     
     pthread_mutex_lock(&graph->graph_lock);
@@ -169,7 +169,7 @@ HoneycombNode* honeycomb_get_node(HoneycombGraph* graph, int node_id) {
 
 /* ===== ADD EDGE ===== */
 bool honeycomb_add_edge(HoneycombGraph* graph, int source_id, int target_id,
-                       float relevance_score, const char* relationship_type) {
+                         float relevance_score, const char* relationship_type) {
     if (!graph || source_id < 0 || target_id < 0 || source_id >= graph->node_count || target_id >= graph->node_count) {
         return false;
     }
@@ -199,7 +199,7 @@ bool honeycomb_add_edge(HoneycombGraph* graph, int source_id, int target_id,
 
 /* ===== FRACTAL INSERTION (CORE INNOVATION) ===== */
 void honeycomb_insert_memory(HoneycombGraph* graph, int focus_node_id,
-                            int new_node_id, long current_time) {
+                              int new_node_id, long current_time) {
     if (!graph || focus_node_id < 0 || new_node_id < 0) return;
     
     pthread_mutex_lock(&graph->node_locks[focus_node_id]);
@@ -266,7 +266,7 @@ void honeycomb_insert_memory(HoneycombGraph* graph, int focus_node_id,
 
 /* ===== JIT CONTEXT RETRIEVAL ===== */
 char* honeycomb_get_jit_context(HoneycombGraph* graph, float* query_vector,
-                               int embedding_dim, int max_tokens) {
+                                 int embedding_dim, int max_tokens) {
     if (!graph || !query_vector || max_tokens <= 0) return NULL;
     
     // Find most relevant starting node
@@ -323,7 +323,7 @@ char* honeycomb_get_jit_context(HoneycombGraph* graph, float* query_vector,
 
 /* ===== SAFETY CIRCUIT BREAKER ===== */
 int honeycomb_check_safety(HoneycombNode* node, long current_time,
-                          long session_start_time, int max_session_time) {
+                           long session_start_time, int max_session_time) {
     if (!node) return SAFETY_INVALID_NODE;
     
     // Check for loops: >3 accesses in <10 second window
@@ -348,7 +348,7 @@ int honeycomb_check_safety(HoneycombNode* node, long current_time,
 
 /* ===== FIND MOST RELEVANT NODE ===== */
 int honeycomb_find_most_relevant_node(HoneycombGraph* graph, float* query_vector,
-                                      int embedding_dim) {
+                                        int embedding_dim) {
     if (!graph || !query_vector || graph->node_count == 0) return -1;
     
     int best_id = 0;
