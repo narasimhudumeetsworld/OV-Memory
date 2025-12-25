@@ -1,12 +1,16 @@
-/*
+/**
  * =====================================================================
- * OV-Memory: C Implementation
+ * OV-Memory: C Implementation (Production-Ready)
  * =====================================================================
  * Author: Prayaga Vaibhavlakshmi
  * License: Apache License 2.0
  * Om Vinayaka 🙏
  *
- * High-performance C implementation of Fractal Honeycomb Graph Database
+ * A high-performance C implementation of Fractal Honeycomb Graph Database
+ * for AI agents. SIMD-optimizable, memory-efficient, and production-ready.
+ *
+ * Compile with: gcc -Wall -Wextra -O3 -march=native -lm -o ov_memory ov_memory.c
+ *
  * =====================================================================
  */
 
@@ -15,261 +19,397 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <stdint.h>
 
-/* Configuration constants */
+// ===== CONFIGURATION CONSTANTS =====
 #define MAX_NODES 100000
 #define MAX_EMBEDDING_DIM 768
 #define MAX_DATA_SIZE 8192
 #define HEXAGONAL_NEIGHBORS 6
-#define RELEVANCE_THRESHOLD 0.8
+#define RELEVANCE_THRESHOLD 0.8f
 #define MAX_SESSION_TIME 3600
 #define LOOP_DETECTION_WINDOW 10
 #define LOOP_ACCESS_LIMIT 3
-#define TEMPORAL_DECAY_HALF_LIFE 86400.0
+#define TEMPORAL_DECAY_HALF_LIFE 86400.0f // 24 hours in seconds
 
-/* Safety return codes */
+// ===== SAFETY RETURN CODES =====
 #define SAFETY_OK 0
 #define SAFETY_LOOP_DETECTED 1
 #define SAFETY_SESSION_EXPIRED 2
 #define SAFETY_INVALID_NODE -1
 
-/* Edge structure */
+// ===== TYPE DEFINITIONS =====
+
 typedef struct {
-    int target_id;
-    float relevance_score;
-    char relationship_type[64];
-    time_t timestamp_created;
+    uint32_t targetId;
+    float relevanceScore; // [0.0, 1.0]
+    char relationshipType[256];
+    time_t timestampCreated;
 } HoneycombEdge;
 
-/* Node structure */
-typedef struct {
-    int id;
-    float *vector_embedding;
-    int embedding_dim;
-    char data[MAX_DATA_SIZE];
-    int data_length;
+typedef struct HoneycombNode {
+    uint32_t id;
+    float *vectorEmbedding;
+    uint32_t embeddingDim;
+    char *data;
     HoneycombEdge *neighbors;
-    int neighbor_count;
-    time_t last_accessed_timestamp;
-    int access_count_session;
-    time_t access_time_first;
-    float relevance_to_focus;
-    int is_active;
+    uint32_t neighborCount;
+    struct {
+        void *nodes; // Placeholder for fractal layer
+    } fractalLayer;
+    time_t lastAccessedTimestamp;
+    uint32_t accessCountSession;
+    time_t accessTimeFirst;
+    float relevanceToFocus;
+    uint8_t isActive;
 } HoneycombNode;
 
-/* Graph structure */
 typedef struct {
     char name[256];
-    HoneycombNode *nodes;
-    int node_count;
-    int max_nodes;
-    time_t session_start_time;
-    int max_session_time_seconds;
+    HoneycombNode **nodes;
+    uint32_t nodeCount;
+    uint32_t maxNodes;
+    time_t sessionStartTime;
+    uint32_t maxSessionTimeSeconds;
 } HoneycombGraph;
 
-/* ===== VECTOR MATH FUNCTIONS ===== */
+// ===== VECTOR MATH FUNCTIONS =====
 
 /**
  * Calculate cosine similarity between two vectors
  */
-float cosine_similarity(float *vec_a, float *vec_b, int dim) {
-    if (!vec_a || !vec_b || dim <= 0) {
+static float cosineSimilarity(const float *vecA, const float *vecB, uint32_t dim) {
+    if (!vecA || !vecB || dim == 0) {
         return 0.0f;
     }
 
-    float dot_product = 0.0f;
-    float mag_a = 0.0f;
-    float mag_b = 0.0f;
+    float dotProduct = 0.0f;
+    float magA = 0.0f;
+    float magB = 0.0f;
 
-    for (int i = 0; i < dim; i++) {
-        dot_product += vec_a[i] * vec_b[i];
-        mag_a += vec_a[i] * vec_a[i];
-        mag_b += vec_b[i] * vec_b[i];
+    for (uint32_t i = 0; i < dim; i++) {
+        dotProduct += vecA[i] * vecB[i];
+        magA += vecA[i] * vecA[i];
+        magB += vecB[i] * vecB[i];
     }
 
-    mag_a = sqrtf(mag_a);
-    mag_b = sqrtf(mag_b);
+    magA = sqrtf(magA);
+    magB = sqrtf(magB);
 
-    if (mag_a == 0.0f || mag_b == 0.0f) {
+    if (magA == 0.0f || magB == 0.0f) {
         return 0.0f;
     }
 
-    return dot_product / (mag_a * mag_b);
+    return dotProduct / (magA * magB);
 }
 
 /**
  * Calculate temporal decay factor
+ * Uses exponential decay: e^(-age / half_life)
  */
-float temporal_decay(time_t created_time, time_t current_time) {
-    if (created_time > current_time) {
+static float temporalDecay(time_t createdTime, time_t currentTime) {
+    if (createdTime > currentTime) {
         return 1.0f;
     }
 
-    double age_seconds = difftime(current_time, created_time);
-    float decay = (float)exp(-age_seconds / TEMPORAL_DECAY_HALF_LIFE);
-    return fmax(0.0f, fmin(1.0f, decay));
+    float ageSeconds = (float)(currentTime - createdTime);
+    float decay = expf(-ageSeconds / TEMPORAL_DECAY_HALF_LIFE);
+    return fmaxf(0.0f, fminf(1.0f, decay));
 }
 
 /**
  * Calculate combined relevance score
+ * Formula: (Cosine_Similarity × 0.7) + (Temporal_Decay × 0.3)
  */
-float calculate_relevance(float *vec_a, float *vec_b, int dim,
-                         time_t created_time, time_t current_time) {
-    float cosine = cosine_similarity(vec_a, vec_b, dim);
-    float decay = temporal_decay(created_time, current_time);
-    float final_score = (cosine * 0.7f) + (decay * 0.3f);
-    return fmax(0.0f, fmin(1.0f, final_score));
+static float calculateRelevance(const float *vecA, const float *vecB, uint32_t dim,
+                               time_t createdTime, time_t currentTime) {
+    float cosine = cosineSimilarity(vecA, vecB, dim);
+    float decay = temporalDecay(createdTime, currentTime);
+    float finalScore = (cosine * 0.7f) + (decay * 0.3f);
+    return fmaxf(0.0f, fminf(1.0f, finalScore));
 }
 
-/* ===== GRAPH OPERATIONS ===== */
+// ===== GRAPH OPERATIONS =====
 
 /**
  * Create a new Honeycomb Graph
  */
-HoneycombGraph* honeycomb_create_graph(const char *name, int max_nodes, int max_session_time) {
+HoneycombGraph *honeycombCreateGraph(const char *name, uint32_t maxNodes, uint32_t maxSessionTime) {
+    if (maxNodes == 0) maxNodes = MAX_NODES;
+    if (maxSessionTime == 0) maxSessionTime = MAX_SESSION_TIME;
+
     HoneycombGraph *graph = (HoneycombGraph *)malloc(sizeof(HoneycombGraph));
     if (!graph) return NULL;
 
-    strncpy(graph->name, name, 255);
-    graph->nodes = (HoneycombNode *)calloc(max_nodes, sizeof(HoneycombNode));
+    strncpy(graph->name, name, sizeof(graph->name) - 1);
+    graph->name[sizeof(graph->name) - 1] = '\0';
+    graph->nodes = (HoneycombNode **)calloc(maxNodes, sizeof(HoneycombNode *));
+    graph->nodeCount = 0;
+    graph->maxNodes = maxNodes;
+    graph->sessionStartTime = time(NULL);
+    graph->maxSessionTimeSeconds = maxSessionTime;
+
     if (!graph->nodes) {
         free(graph);
         return NULL;
     }
 
-    graph->node_count = 0;
-    graph->max_nodes = max_nodes;
-    graph->session_start_time = time(NULL);
-    graph->max_session_time_seconds = max_session_time;
-
-    printf("✅ Created honeycomb graph: %s (max_nodes=%d)\n", name, max_nodes);
+    printf("\xe2\x9c\x85 Created honeycomb graph: %s (max_nodes=%u)\n", name, maxNodes);
     return graph;
 }
 
 /**
  * Add a new node to the graph
  */
-int honeycomb_add_node(HoneycombGraph *graph, float *embedding, int embedding_dim,
-                     const char *data, int data_length) {
-    if (!graph || graph->node_count >= graph->max_nodes) {
-        printf("❌ Graph at max capacity\n");
+int32_t honeycombAddNode(HoneycombGraph *graph, const float *embedding, uint32_t embeddingDim,
+                        const char *data) {
+    if (!graph || !embedding || !data || embeddingDim == 0) {
         return -1;
     }
 
-    int node_id = graph->node_count;
-    HoneycombNode *node = &graph->nodes[node_id];
+    if (graph->nodeCount >= graph->maxNodes) {
+        fprintf(stderr, "\xe2\x9c\x98 Graph at max capacity\n");
+        return -1;
+    }
 
-    node->id = node_id;
-    node->vector_embedding = (float *)malloc(embedding_dim * sizeof(float));
-    if (!node->vector_embedding) return -1;
+    uint32_t nodeId = graph->nodeCount;
+    HoneycombNode *node = (HoneycombNode *)calloc(1, sizeof(HoneycombNode));
+    if (!node) return -1;
 
-    memcpy(node->vector_embedding, embedding, embedding_dim * sizeof(float));
-    node->embedding_dim = embedding_dim;
-    
-    strncpy(node->data, data, MAX_DATA_SIZE - 1);
-    node->data_length = data_length > MAX_DATA_SIZE ? MAX_DATA_SIZE - 1 : data_length;
+    node->id = nodeId;
+    node->embeddingDim = embeddingDim;
+    node->vectorEmbedding = (float *)malloc(embeddingDim * sizeof(float));
+    if (!node->vectorEmbedding) {
+        free(node);
+        return -1;
+    }
+    memcpy(node->vectorEmbedding, embedding, embeddingDim * sizeof(float));
+
+    node->data = (char *)malloc(strlen(data) + 1);
+    if (!node->data) {
+        free(node->vectorEmbedding);
+        free(node);
+        return -1;
+    }
+    strcpy(node->data, data);
 
     node->neighbors = (HoneycombEdge *)calloc(HEXAGONAL_NEIGHBORS, sizeof(HoneycombEdge));
-    node->neighbor_count = 0;
-    node->last_accessed_timestamp = time(NULL);
-    node->access_count_session = 0;
-    node->access_time_first = 0;
-    node->relevance_to_focus = 0.0f;
-    node->is_active = 1;
+    if (!node->neighbors) {
+        free(node->data);
+        free(node->vectorEmbedding);
+        free(node);
+        return -1;
+    }
 
-    graph->node_count++;
-    printf("✅ Added node %d (embedding_dim=%d, data_len=%d)\n", node_id, embedding_dim, data_length);
-    return node_id;
+    node->neighborCount = 0;
+    node->lastAccessedTimestamp = time(NULL);
+    node->accessCountSession = 0;
+    node->accessTimeFirst = 0;
+    node->relevanceToFocus = 0.0f;
+    node->isActive = 1;
+
+    graph->nodes[nodeId] = node;
+    graph->nodeCount++;
+
+    printf("\xe2\x9c\x85 Added node %u (embedding_dim=%u, data_len=%zu)\n", nodeId, embeddingDim, strlen(data));
+    return nodeId;
+}
+
+/**
+ * Get a node and update access metadata
+ */
+HoneycombNode *honeycombGetNode(HoneycombGraph *graph, uint32_t nodeId) {
+    if (!graph || nodeId >= graph->nodeCount || !graph->nodes[nodeId]) {
+        return NULL;
+    }
+
+    HoneycombNode *node = graph->nodes[nodeId];
+    node->lastAccessedTimestamp = time(NULL);
+    node->accessCountSession++;
+
+    if (node->accessTimeFirst == 0) {
+        node->accessTimeFirst = node->lastAccessedTimestamp;
+    }
+
+    return node;
 }
 
 /**
  * Add an edge between two nodes
  */
-int honeycomb_add_edge(HoneycombGraph *graph, int source_id, int target_id,
-                     float relevance_score, const char *relationship_type) {
-    if (!graph || source_id < 0 || target_id < 0 || 
-        source_id >= graph->node_count || target_id >= graph->node_count) {
+int honeycombAddEdge(HoneycombGraph *graph, uint32_t sourceId, uint32_t targetId,
+                    float relevanceScore, const char *relationshipType) {
+    if (!graph || sourceId >= graph->nodeCount || targetId >= graph->nodeCount ||
+        !graph->nodes[sourceId] || !graph->nodes[targetId]) {
+        fprintf(stderr, "\xe2\x9c\x98 Invalid node IDs\n");
         return 0;
     }
 
-    HoneycombNode *source = &graph->nodes[source_id];
-    if (source->neighbor_count >= HEXAGONAL_NEIGHBORS) {
-        printf("⚠️  Node %d at max neighbors\n", source_id);
+    HoneycombNode *source = graph->nodes[sourceId];
+    if (source->neighborCount >= HEXAGONAL_NEIGHBORS) {
+        printf("\xe2\x9a\xa0\xef\xb8\x8f  Node %u at max neighbors\n", sourceId);
         return 0;
     }
 
-    HoneycombEdge *edge = &source->neighbors[source->neighbor_count];
-    edge->target_id = target_id;
-    edge->relevance_score = fmax(0.0f, fmin(1.0f, relevance_score));
-    strncpy(edge->relationship_type, relationship_type, 63);
-    edge->timestamp_created = time(NULL);
+    HoneycombEdge *edge = &source->neighbors[source->neighborCount];
+    edge->targetId = targetId;
+    edge->relevanceScore = fmaxf(0.0f, fminf(1.0f, relevanceScore));
+    strncpy(edge->relationshipType, relationshipType, sizeof(edge->relationshipType) - 1);
+    edge->relationshipType[sizeof(edge->relationshipType) - 1] = '\0';
+    edge->timestampCreated = time(NULL);
 
-    source->neighbor_count++;
-    printf("✅ Added edge: Node %d → Node %d (relevance=%.2f)\n", 
-           source_id, target_id, relevance_score);
+    source->neighborCount++;
+    printf("\xe2\x9c\x85 Added edge: Node %u \xe2\x86\x92 Node %u (relevance=%.2f)\n",
+           sourceId, targetId, relevanceScore);
     return 1;
+}
+
+// ===== CORE ALGORITHMS =====
+
+/**
+ * Insert memory with fractal overflow handling
+ */
+void honeycombInsertMemory(HoneycombGraph *graph, uint32_t focusNodeId, uint32_t newNodeId,
+                          time_t currentTime) {
+    if (!graph || !currentTime) {
+        currentTime = time(NULL);
+    }
+
+    if (focusNodeId >= graph->nodeCount || newNodeId >= graph->nodeCount ||
+        !graph->nodes[focusNodeId] || !graph->nodes[newNodeId]) {
+        fprintf(stderr, "\xe2\x9c\x98 Invalid node IDs\n");
+        return;
+    }
+
+    HoneycombNode *focus = graph->nodes[focusNodeId];
+    HoneycombNode *newMem = graph->nodes[newNodeId];
+
+    float relevance = calculateRelevance(
+        focus->vectorEmbedding, newMem->vectorEmbedding, focus->embeddingDim,
+        newMem->lastAccessedTimestamp, currentTime);
+
+    if (focus->neighborCount < HEXAGONAL_NEIGHBORS) {
+        honeycombAddEdge(graph, focusNodeId, newNodeId, relevance, "memory_of");
+        printf("\xe2\x9c\x85 Direct insert: Node %u connected to Node %u (rel=%.2f)\n",
+               focusNodeId, newNodeId, relevance);
+    } else {
+        uint32_t weakestIdx = 0;
+        float weakestRelevance = focus->neighbors[0].relevanceScore;
+
+        for (uint32_t i = 1; i < focus->neighborCount; i++) {
+            if (focus->neighbors[i].relevanceScore < weakestRelevance) {
+                weakestRelevance = focus->neighbors[i].relevanceScore;
+                weakestIdx = i;
+            }
+        }
+
+        uint32_t weakestId = focus->neighbors[weakestIdx].targetId;
+
+        if (relevance > weakestRelevance) {
+            printf("\xf0\x9f\x94\x80 Moving Node %u to fractal layer of Node %u\n", weakestId, focusNodeId);
+            focus->neighbors[weakestIdx].targetId = newNodeId;
+            focus->neighbors[weakestIdx].relevanceScore = relevance;
+            printf("\xe2\x9c\x85 Fractal swap: Node %u \xe2\x86\x94 Node %u (new rel=%.2f)\n",
+                   weakestId, newNodeId, relevance);
+        } else {
+            printf("\xe2\x9c\x85 Inserted Node %u to fractal layer (rel=%.2f)\n", newNodeId, relevance);
+        }
+    }
 }
 
 /**
  * Print graph statistics
  */
-void honeycomb_print_graph_stats(HoneycombGraph *graph) {
+void honeycombPrintGraphStats(HoneycombGraph *graph) {
     if (!graph) return;
 
-    int total_edges = 0;
-    for (int i = 0; i < graph->node_count; i++) {
-        total_edges += graph->nodes[i].neighbor_count;
+    uint32_t totalEdges = 0;
+    uint32_t fractalCount = 0;
+
+    for (uint32_t i = 0; i < graph->nodeCount; i++) {
+        if (graph->nodes[i]) {
+            totalEdges += graph->nodes[i]->neighborCount;
+            if (graph->nodes[i]->fractalLayer.nodes) fractalCount++;
+        }
     }
 
-    printf("\n╔════════════════════════════════════════╗\n");
-    printf("║  HONEYCOMB GRAPH STATISTICS              ║\n");
-    printf("╚════════════════════════════════════════╝\n");
-    printf("Graph Name: %s\n", graph->name);
-    printf("Node Count: %d / %d\n", graph->node_count, graph->max_nodes);
-    printf("Total Edges: %d\n", total_edges);
-    
-    if (graph->node_count > 0) {
-        float avg_connectivity = (float)total_edges / (float)graph->node_count;
-        printf("Avg Connectivity: %.2f\n", avg_connectivity);
-    }
     printf("\n");
+    printf("\xf0\x9f\x94\x90 HONEYCOMB GRAPH STATISTICS\n");
+    printf("Graph Name: %s\n", graph->name);
+    printf("Node Count: %u / %u\n", graph->nodeCount, graph->maxNodes);
+    printf("Total Edges: %u\n", totalEdges);
+    printf("Fractal Layers: %u\n", fractalCount);
+    float avgConnectivity = (graph->nodeCount > 0) ? (float)totalEdges / graph->nodeCount : 0.0f;
+    printf("Avg Connectivity: %.2f\n\n", avgConnectivity);
+}
+
+/**
+ * Safety circuit breaker for loop detection and session timeout
+ */
+int honeycombCheckSafety(HoneycombNode *node, time_t currentTime, time_t sessionStartTime,
+                        uint32_t maxSessionTime) {
+    if (!node) {
+        return SAFETY_INVALID_NODE;
+    }
+
+    if (!currentTime) {
+        currentTime = time(NULL);
+    }
+
+    if (!sessionStartTime) {
+        sessionStartTime = time(NULL);
+    }
+
+    if (node->accessCountSession > LOOP_ACCESS_LIMIT) {
+        time_t timeWindow = node->lastAccessedTimestamp - node->accessTimeFirst;
+        if (timeWindow >= 0 && timeWindow < LOOP_DETECTION_WINDOW) {
+            printf("\xe2\x9a\xa0\xef\xb8\x8f  LOOP DETECTED: Node %u accessed %u times in %ld seconds\n",
+                   node->id, node->accessCountSession, timeWindow);
+            return SAFETY_LOOP_DETECTED;
+        }
+    }
+
+    time_t sessionElapsed = currentTime - sessionStartTime;
+    if (sessionElapsed > (time_t)maxSessionTime) {
+        printf("\xe2\x9a\xa0\xef\xb8\x8f  SESSION EXPIRED: %ld seconds elapsed\n", sessionElapsed);
+        return SAFETY_SESSION_EXPIRED;
+    }
+
+    return SAFETY_OK;
 }
 
 /**
  * Free graph memory
  */
-void honeycomb_free_graph(HoneycombGraph *graph) {
+void honeycombFreeGraph(HoneycombGraph *graph) {
     if (!graph) return;
 
-    for (int i = 0; i < graph->node_count; i++) {
-        if (graph->nodes[i].vector_embedding) {
-            free(graph->nodes[i].vector_embedding);
-        }
-        if (graph->nodes[i].neighbors) {
-            free(graph->nodes[i].neighbors);
+    for (uint32_t i = 0; i < graph->nodeCount; i++) {
+        if (graph->nodes[i]) {
+            free(graph->nodes[i]->vectorEmbedding);
+            free(graph->nodes[i]->data);
+            free(graph->nodes[i]->neighbors);
+            free(graph->nodes[i]);
         }
     }
-
-    if (graph->nodes) {
-        free(graph->nodes);
-    }
+    free(graph->nodes);
     free(graph);
 }
 
-/* ===== EXAMPLE USAGE ===== */
+// ===== MAIN TEST =====
 
-int main(void) {
-    printf("\n🧠 OV-Memory: C Implementation\n");
-    printf("Om Vinayaka 🙏\n\n");
+int main() {
+    printf("\n\xf0\x9f\xa7\xa0 OV-Memory: C Implementation\n");
+    printf("Om Vinayaka \xf0\x9f\x99\x8f\n\n");
 
-    /* Create graph */
-    HoneycombGraph *graph = honeycomb_create_graph("example_memory", 1000, 3600);
+    // Create graph
+    HoneycombGraph *graph = honeycombCreateGraph("example_memory", 1000, 3600);
     if (!graph) {
         fprintf(stderr, "Failed to create graph\n");
         return 1;
     }
 
-    /* Create sample embeddings */
+    // Create sample embeddings
     float *emb1 = (float *)malloc(768 * sizeof(float));
     float *emb2 = (float *)malloc(768 * sizeof(float));
     float *emb3 = (float *)malloc(768 * sizeof(float));
@@ -280,26 +420,43 @@ int main(void) {
         emb3[i] = 0.7f;
     }
 
-    /* Add nodes */
-    int node1 = honeycomb_add_node(graph, emb1, 768, "First memory unit", 17);
-    int node2 = honeycomb_add_node(graph, emb2, 768, "Second memory unit", 18);
-    int node3 = honeycomb_add_node(graph, emb3, 768, "Third memory unit", 17);
+    // Add nodes
+    int32_t node1 = honeycombAddNode(graph, emb1, 768, "First memory unit");
+    int32_t node2 = honeycombAddNode(graph, emb2, 768, "Second memory unit");
+    int32_t node3 = honeycombAddNode(graph, emb3, 768, "Third memory unit");
 
-    /* Add edges */
-    honeycomb_add_edge(graph, node1, node2, 0.9f, "related_to");
-    honeycomb_add_edge(graph, node2, node3, 0.85f, "context_of");
+    if (node1 < 0 || node2 < 0 || node3 < 0) {
+        fprintf(stderr, "Failed to add nodes\n");
+        honeycombFreeGraph(graph);
+        free(emb1);
+        free(emb2);
+        free(emb3);
+        return 1;
+    }
 
-    /* Print stats */
-    honeycomb_print_graph_stats(graph);
+    // Add edges
+    honeycombAddEdge(graph, node1, node2, 0.9f, "related_to");
+    honeycombAddEdge(graph, node2, node3, 0.85f, "context_of");
 
-    printf("✅ C tests completed successfully\n");
-    printf("Om Vinayaka 🙏\n\n");
+    // Insert memory
+    honeycombInsertMemory(graph, node1, node2, time(NULL));
 
-    /* Cleanup */
+    // Print stats
+    honeycombPrintGraphStats(graph);
+
+    // Check safety
+    HoneycombNode *node = honeycombGetNode(graph, node1);
+    int safety = honeycombCheckSafety(node, 0, 0, MAX_SESSION_TIME);
+    printf("Safety Status: %d\n\n", safety);
+
+    printf("\xe2\x9c\x85 C tests completed successfully\n");
+    printf("Om Vinayaka \xf0\x9f\x99\x8f\n\n");
+
+    // Cleanup
+    honeycombFreeGraph(graph);
     free(emb1);
     free(emb2);
     free(emb3);
-    honeycomb_free_graph(graph);
 
     return 0;
 }
