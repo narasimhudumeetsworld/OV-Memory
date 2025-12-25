@@ -1,14 +1,17 @@
-/*
+/**
  * =====================================================================
- * OV-Memory: Fractal Honeycomb Graph Database
+ * OV-Memory v1.1: Metabolic & Centroid Upgrade (Header)
  * =====================================================================
  * Author: Prayaga Vaibhavlakshmi
  * License: Apache License 2.0
  * Om Vinayaka 🙏
  *
- * A high-performance, C-based memory system for AI agents using a
- * Fractal Honeycomb topology for drift-resistant, bounded-connectivity
- * semantic storage.
+ * Production-ready Fractal Honeycomb Graph Database with:
+ * - Resource-Aware Metabolism Engine
+ * - Centroid-Based Indexing (O(1) entry search)
+ * - Binary Persistence with Fractal Layer Recursion
+ * - Cross-Session Hydration
+ *
  * =====================================================================
  */
 
@@ -20,121 +23,219 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <stdbool.h>
 
-/* ===== CONFIGURATION MACROS ===== */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// ===== CONFIGURATION CONSTANTS =====
 #define MAX_NODES 100000
 #define MAX_EMBEDDING_DIM 768
 #define MAX_DATA_SIZE 8192
-#define MAX_RELATIONSHIP_TYPE 64
 #define HEXAGONAL_NEIGHBORS 6
-#define RELEVANCE_THRESHOLD 0.8
+#define RELEVANCE_THRESHOLD 0.8f
 #define MAX_SESSION_TIME 3600
 #define LOOP_DETECTION_WINDOW 10
 #define LOOP_ACCESS_LIMIT 3
-#define EMBEDDING_DIM_DEFAULT 768
-#define TEMPORAL_DECAY_HALF_LIFE 86400.0f // 24 hours in seconds
+#define TEMPORAL_DECAY_HALF_LIFE 86400.0f
+#define CENTROID_COUNT 5
+#define CENTROID_SCAN_PERCENTAGE 0.05f
 
-/* ===== SAFETY RETURN CODES ===== */
+// ===== AUDIT THRESHOLDS =====
+#define AUDIT_SEMANTIC_TRIGGER 1260 // 21 minutes in seconds
+#define AUDIT_FRACTAL_TRIGGER 1080  // 18 minutes
+#define AUDIT_CRITICAL_SEAL_TRIGGER 300 // 5 minutes
+
+// ===== SAFETY RETURN CODES =====
 #define SAFETY_OK 0
 #define SAFETY_LOOP_DETECTED 1
 #define SAFETY_SESSION_EXPIRED 2
 #define SAFETY_INVALID_NODE -1
 
-/* ===== FORWARD DECLARATIONS ===== */
-typedef struct HoneycombEdge HoneycombEdge;
-typedef struct HoneycombNode HoneycombNode;
-typedef struct HoneycombGraph HoneycombGraph;
+// ===== METABOLIC STATE ENUM =====
+typedef enum {
+    METABOLIC_HEALTHY = 0,
+    METABOLIC_STRESSED = 1,
+    METABOLIC_CRITICAL = 2
+} MetabolicState;
 
-/* ===== HONEYCOMB EDGE STRUCTURE ===== */
-typedef struct HoneycombEdge {
-    int target_id;                              // ID of connected node
-    float relevance_score;                     // [0.0, 1.0]
-    char relationship_type[MAX_RELATIONSHIP_TYPE];
-    long timestamp_created;                    // UNIX timestamp
+// ===== TYPE DEFINITIONS =====
+
+/**
+ * AgentMetabolism: Resource constraints and dynamic state
+ */
+typedef struct {
+    int messages_remaining;     // Messages left before hard stop
+    int minutes_remaining;      // Session time left (seconds)
+    bool is_api_mode;          // API rate-limited vs Direct account
+    float context_availability; // Percentage of context window used (0-100)
+    float metabolic_weight;    // Relevance multiplier (0.5 - 1.5)
+    MetabolicState state;      // HEALTHY, STRESSED, CRITICAL
+    time_t audit_last_run;     // Timestamp of last metabolic audit
+} AgentMetabolism;
+
+/**
+ * HoneycombEdge: Connection between two nodes
+ */
+typedef struct {
+    uint32_t targetId;
+    float relevanceScore;
+    char relationshipType[256];
+    time_t timestampCreated;
 } HoneycombEdge;
 
-/* ===== HONEYCOMB NODE STRUCTURE ===== */
+/**
+ * HoneycombNode: Individual memory unit
+ */
 typedef struct HoneycombNode {
-    int id;                                  // Unique identifier
-    float* vector_embedding;                  // Embedding array (768-dim default)
-    int embedding_dim;                        // Actual dimension used
-    char* data;                               // Text payload
-    int data_length;                          // Length of data
-    
-    // Hexagonal connectivity
-    HoneycombEdge neighbors[HEXAGONAL_NEIGHBORS]; // Max 6 connections
-    int neighbor_count;                       // Current neighbor count
-    
-    // Fractal layer for overflow
-    struct HoneycombGraph* fractal_layer;    // Nested graph (sub-branches)
-    
-    // Safety and metadata
-    long last_accessed_timestamp;             // UNIX timestamp (seconds)
-    int access_count_session;                 // Times accessed this session
-    long access_time_first;                   // First access time (for loop detection)
-    float relevance_to_focus;                 // Relevance to current query
-    bool is_active;                          // Node is in use
+    uint32_t id;
+    float *vectorEmbedding;
+    uint32_t embeddingDim;
+    char *data;
+    HoneycombEdge *neighbors;
+    uint32_t neighborCount;
+    struct HoneycombGraph *fractalLayer;
+    time_t lastAccessedTimestamp;
+    uint32_t accessCountSession;
+    time_t accessTimeFirst;
+    float relevanceToFocus;
+    float metabolic_weight;    // Individual metabolism score
+    uint8_t isActive;
+    uint8_t isFractalSeed;     // Marker for compressed session node
 } HoneycombNode;
 
-/* ===== HONEYCOMB GRAPH CONTAINER ===== */
+/**
+ * CentroidMap: Fast entry indexing via hub nodes
+ */
+typedef struct {
+    uint32_t *hubNodeIds;
+    float *hubCentrality;
+    uint32_t hubCount;
+    uint32_t maxHubs;
+} CentroidMap;
+
+/**
+ * HoneycombGraph: Main container with v1.1 enhancements
+ */
 typedef struct HoneycombGraph {
-    HoneycombNode* nodes;                    // Dynamic array of nodes
-    int node_count;                           // Current number of nodes
-    int max_nodes;                            // Max capacity
-    char graph_name[128];                    // Graph identifier
+    char name[256];
+    HoneycombNode **nodes;
+    uint32_t nodeCount;
+    uint32_t maxNodes;
+    time_t sessionStartTime;
+    uint32_t maxSessionTimeSeconds;
     
-    // Session safety
-    long session_start_time;                 // When session started
-    int max_session_time_seconds;             // Max session duration
-    
-    // Thread safety
-    pthread_mutex_t graph_lock;              // Global graph lock
-    pthread_mutex_t* node_locks;             // Per-node locks (optional)
+    // ===== v1.1 Additions =====
+    AgentMetabolism metabolism;
+    CentroidMap centroidMap;
+    pthread_mutex_t lock;       // Thread safety
+    uint8_t isDirty;           // Needs persistence
 } HoneycombGraph;
 
-/* ===== VECTOR MATH FUNCTIONS ===== */
-float cosine_similarity(float* vec_a, float* vec_b, int dim);
-float temporal_decay(long created_time, long current_time);
-float calculate_relevance(float* vec_a, float* vec_b, int dim, 
-                                 long created_time, long current_time);
+// ===== FUNCTION DECLARATIONS (v1.0) =====
 
-/* ===== GRAPH CREATION AND LIFECYCLE ===== */
-HoneycombGraph* honeycomb_create_graph(const char* name, int max_nodes, int max_session_time);
-void honeycomb_free_graph(HoneycombGraph* graph);
-void honeycomb_reset_session(HoneycombGraph* graph);
+// Graph creation/destruction
+HoneycombGraph *honeycombCreateGraph(const char *name, uint32_t maxNodes, uint32_t maxSessionTime);
+void honeycombFreeGraph(HoneycombGraph *graph);
 
-/* ===== NODE OPERATIONS ===== */
-int honeycomb_add_node(HoneycombGraph* graph, float* embedding, int embedding_dim,
-                          const char* data, int data_length);
-HoneycombNode* honeycomb_get_node(HoneycombGraph* graph, int node_id);
-void honeycomb_update_node_data(HoneycombGraph* graph, int node_id, 
-                                   const char* new_data, int data_length);
+// Node operations
+int32_t honeycombAddNode(HoneycombGraph *graph, const float *embedding, uint32_t embeddingDim, const char *data);
+HoneycombNode *honeycombGetNode(HoneycombGraph *graph, uint32_t nodeId);
+int honeycombAddEdge(HoneycombGraph *graph, uint32_t sourceId, uint32_t targetId, float relevanceScore, const char *relationshipType);
 
-/* ===== EDGE OPERATIONS ===== */
-bool honeycomb_add_edge(HoneycombGraph* graph, int source_id, int target_id,
-                         float relevance_score, const char* relationship_type);
-bool honeycomb_remove_edge(HoneycombGraph* graph, int source_id, int target_id);
+// Memory management
+void honeycombInsertMemory(HoneycombGraph *graph, uint32_t focusNodeId, uint32_t newNodeId, time_t currentTime);
+int honeycombCheckSafety(HoneycombNode *node, time_t currentTime, time_t sessionStartTime, uint32_t maxSessionTime);
 
-/* ===== CORE ALGORITHMS ===== */
-void honeycomb_insert_memory(HoneycombGraph* graph, int focus_node_id, 
-                              int new_node_id, long current_time);
-char* honeycomb_get_jit_context(HoneycombGraph* graph, float* query_vector, 
-                                 int embedding_dim, int max_tokens);
-int honeycomb_check_safety(HoneycombNode* node, long current_time,
-                           long session_start_time, int max_session_time);
+// Utilities
+void honeycombPrintGraphStats(HoneycombGraph *graph);
 
-/* ===== TRAVERSAL AND SEARCH ===== */
-int* honeycomb_find_neighbors(HoneycombGraph* graph, int node_id, int* count);
-int honeycomb_find_most_relevant_node(HoneycombGraph* graph, float* query_vector, 
-                                        int embedding_dim);
-void honeycomb_traverse_by_relevance(HoneycombGraph* graph, int start_node_id,
-                                    float min_relevance);
+// ===== FUNCTION DECLARATIONS (v1.1 - Metabolism Engine) =====
 
-/* ===== UTILITY AND DEBUGGING ===== */
-void honeycomb_print_node(HoneycombGraph* graph, int node_id);
-void honeycomb_print_graph_stats(HoneycombGraph* graph);
-void honeycomb_compact_memory(HoneycombGraph* graph);
+/**
+ * Initialize metabolism for a graph with resource constraints
+ */
+void honeycombInitializeMetabolism(HoneycombGraph *graph, int maxMessages, int maxMinutes, bool isApiMode);
+
+/**
+ * Update metabolism state based on current resource usage
+ */
+void honeycombUpdateMetabolism(HoneycombGraph *graph, int messagesUsed, int secondsElapsed, float contextUsed);
+
+/**
+ * Calculate resource-aware relevance score
+ * Formula: R_final = (S_sem * 0.6) + (T_decay * 0.2) + (R_resource * 0.2)
+ */
+float honeycombCalculateMetabolicRelevance(
+    const float *vecA, const float *vecB, uint32_t dim,
+    time_t createdTime, time_t currentTime,
+    float resourceAvailability, float metabolicWeight
+);
+
+/**
+ * Run metabolic audits on specific thresholds
+ */
+void honeycombMetabolicAudit(HoneycombGraph *graph);
+
+// ===== FUNCTION DECLARATIONS (v1.1 - Centroid Indexing) =====
+
+/**
+ * Initialize centroid map with hub nodes
+ */
+void honeycombInitializeCentroidMap(HoneycombGraph *graph);
+
+/**
+ * Update centrality scores for all nodes
+ */
+void honeycombRecalculateCentrality(HoneycombGraph *graph);
+
+/**
+ * Fast entry point search using centroid map (O(k) where k = hub count)
+ */
+uint32_t honeycombFindMostRelevantNode(HoneycombGraph *graph, const float *queryVector, uint32_t embeddingDim);
+
+// ===== FUNCTION DECLARATIONS (v1.1 - Binary Persistence) =====
+
+/**
+ * Save graph (including nested fractal layers) to binary file
+ * Format: [Header: "Om Vinayaka"] [Metadata] [Nodes] [Edges] [Fractal Layers]
+ */
+int honeycombSaveBinary(HoneycombGraph *graph, const char *filename);
+
+/**
+ * Load graph from binary file with full fractal reconstruction
+ */
+HoneycombGraph *honeycombLoadBinary(const char *filename);
+
+/**
+ * Export graph to GraphViz format with metabolic coloring
+ * Red: metabolic_weight < 0.5, Orange: 0.5-0.8, Green: > 0.8
+ * Fractal seeds shown as double octagons
+ */
+void honeycombExportGraphviz(HoneycombGraph *graph, const char *filename);
+
+// ===== FUNCTION DECLARATIONS (v1.1 - Cross-Session Hydration) =====
+
+/**
+ * Hydrate session from previous fractal seeds
+ * Scans disk for saved seeds matching userVector with cosine similarity > 0.85
+ */
+int honeycombHydrateSession(HoneycombGraph *graph, const float *userVector, uint32_t embeddingDim, const char *sessionDir);
+
+/**
+ * Create and compress a "Fractal Seed" (summary node) before session end
+ */
+uint32_t honeycombCreateFractalSeed(HoneycombGraph *graph, const char *seedLabel);
+
+// ===== UTILITY FUNCTIONS =====
+
+void honeycombPrintMetabolicState(HoneycombGraph *graph);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // OV_MEMORY_H
