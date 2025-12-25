@@ -1,0 +1,27 @@
+[package]
+name = "ov_memory"
+version = "1.0.0"
+edition = "2021"
+authors = ["Prayaga Vaibhavlakshmi <prayaga.vaibhav@example.com>"]
+license = "Apache-2.0"
+description = "Fractal Honeycomb Graph Database for AI Agent Memory Systems"
+repository = "https://github.com/narasimhudumeetsworld/OV-Memory"
+keywords = ["graph", "memory", "ai", "honeycomb", "fractal"]
+categories = ["data-structures", "algorithms"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[[bin]]
+name = "ov_memory"
+path = "src/lib.rs"
+
+[lib]
+name = "ov_memory"
+path = "src/lib.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
