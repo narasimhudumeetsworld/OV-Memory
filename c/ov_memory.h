@@ -50,55 +50,55 @@ typedef struct HoneycombGraph HoneycombGraph;
 /* ===== HONEYCOMB EDGE STRUCTURE ===== */
 typedef struct HoneycombEdge {
     int target_id;                              // ID of connected node
-    float relevance_score;                      // [0.0, 1.0]
+    float relevance_score;                     // [0.0, 1.0]
     char relationship_type[MAX_RELATIONSHIP_TYPE];
-    long timestamp_created;                     // UNIX timestamp
+    long timestamp_created;                    // UNIX timestamp
 } HoneycombEdge;
 
 /* ===== HONEYCOMB NODE STRUCTURE ===== */
 typedef struct HoneycombNode {
-    int id;                                     // Unique identifier
-    float* vector_embedding;                    // Embedding array (768-dim default)
-    int embedding_dim;                          // Actual dimension used
-    char* data;                                 // Text payload
-    int data_length;                            // Length of data
+    int id;                                  // Unique identifier
+    float* vector_embedding;                  // Embedding array (768-dim default)
+    int embedding_dim;                        // Actual dimension used
+    char* data;                               // Text payload
+    int data_length;                          // Length of data
     
     // Hexagonal connectivity
     HoneycombEdge neighbors[HEXAGONAL_NEIGHBORS]; // Max 6 connections
-    int neighbor_count;                         // Current neighbor count
+    int neighbor_count;                       // Current neighbor count
     
     // Fractal layer for overflow
-    struct HoneycombGraph* fractal_layer;       // Nested graph (sub-branches)
+    struct HoneycombGraph* fractal_layer;    // Nested graph (sub-branches)
     
     // Safety and metadata
-    long last_accessed_timestamp;               // UNIX timestamp (seconds)
-    int access_count_session;                   // Times accessed this session
-    long access_time_first;                     // First access time (for loop detection)
-    float relevance_to_focus;                   // Relevance to current query
-    bool is_active;                             // Node is in use
+    long last_accessed_timestamp;             // UNIX timestamp (seconds)
+    int access_count_session;                 // Times accessed this session
+    long access_time_first;                   // First access time (for loop detection)
+    float relevance_to_focus;                 // Relevance to current query
+    bool is_active;                          // Node is in use
 } HoneycombNode;
 
 /* ===== HONEYCOMB GRAPH CONTAINER ===== */
 typedef struct HoneycombGraph {
-    HoneycombNode* nodes;                       // Dynamic array of nodes
-    int node_count;                             // Current number of nodes
-    int max_nodes;                              // Max capacity
-    char graph_name[128];                       // Graph identifier
+    HoneycombNode* nodes;                    // Dynamic array of nodes
+    int node_count;                           // Current number of nodes
+    int max_nodes;                            // Max capacity
+    char graph_name[128];                    // Graph identifier
     
     // Session safety
-    long session_start_time;                    // When session started
-    int max_session_time_seconds;               // Max session duration
+    long session_start_time;                 // When session started
+    int max_session_time_seconds;             // Max session duration
     
     // Thread safety
-    pthread_mutex_t graph_lock;                 // Global graph lock
-    pthread_mutex_t* node_locks;                // Per-node locks (optional)
+    pthread_mutex_t graph_lock;              // Global graph lock
+    pthread_mutex_t* node_locks;             // Per-node locks (optional)
 } HoneycombGraph;
 
 /* ===== VECTOR MATH FUNCTIONS ===== */
 float cosine_similarity(float* vec_a, float* vec_b, int dim);
 float temporal_decay(long created_time, long current_time);
 float calculate_relevance(float* vec_a, float* vec_b, int dim, 
-                         long created_time, long current_time);
+                                 long created_time, long current_time);
 
 /* ===== GRAPH CREATION AND LIFECYCLE ===== */
 HoneycombGraph* honeycomb_create_graph(const char* name, int max_nodes, int max_session_time);
@@ -107,28 +107,28 @@ void honeycomb_reset_session(HoneycombGraph* graph);
 
 /* ===== NODE OPERATIONS ===== */
 int honeycomb_add_node(HoneycombGraph* graph, float* embedding, int embedding_dim,
-                      const char* data, int data_length);
+                          const char* data, int data_length);
 HoneycombNode* honeycomb_get_node(HoneycombGraph* graph, int node_id);
 void honeycomb_update_node_data(HoneycombGraph* graph, int node_id, 
-                               const char* new_data, int data_length);
+                                   const char* new_data, int data_length);
 
 /* ===== EDGE OPERATIONS ===== */
 bool honeycomb_add_edge(HoneycombGraph* graph, int source_id, int target_id,
-                       float relevance_score, const char* relationship_type);
+                         float relevance_score, const char* relationship_type);
 bool honeycomb_remove_edge(HoneycombGraph* graph, int source_id, int target_id);
 
 /* ===== CORE ALGORITHMS ===== */
 void honeycomb_insert_memory(HoneycombGraph* graph, int focus_node_id, 
-                            int new_node_id, long current_time);
+                              int new_node_id, long current_time);
 char* honeycomb_get_jit_context(HoneycombGraph* graph, float* query_vector, 
-                               int embedding_dim, int max_tokens);
+                                 int embedding_dim, int max_tokens);
 int honeycomb_check_safety(HoneycombNode* node, long current_time,
-                          long session_start_time, int max_session_time);
+                           long session_start_time, int max_session_time);
 
 /* ===== TRAVERSAL AND SEARCH ===== */
 int* honeycomb_find_neighbors(HoneycombGraph* graph, int node_id, int* count);
 int honeycomb_find_most_relevant_node(HoneycombGraph* graph, float* query_vector, 
-                                      int embedding_dim);
+                                        int embedding_dim);
 void honeycomb_traverse_by_relevance(HoneycombGraph* graph, int start_node_id,
                                     float min_relevance);
 
