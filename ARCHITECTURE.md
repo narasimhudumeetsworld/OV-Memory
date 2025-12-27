@@ -1,507 +1,663 @@
-# 🏗️ OV-Memory Architecture
+# OV-MEMORY v1.1: Architecture & Integration Guide
 
-**Om Vinayaka 🙏**
-
-## Executive Summary
-
-OV-Memory is a **Fractal Honeycomb Graph Database** designed for AI agent memory management. It implements bounded-degree graph topology with intelligent fractal overflow handling to maintain semantic coherence while preventing unbounded growth.
-
-**Key Design Goals:**
-1. **Never Delete** - All memories preserved (fractal layers serve as archive)
-2. **Bounded Connectivity** - Each node has max 6 neighbors (hexagonal constraint)
-3. **Semantic Drift Resistance** - Temporal decay + cosine similarity preserve relevance
-4. **JIT Context Assembly** - Breadth-first traversal builds context windows on-demand
-5. **Thread-Safe by Default** - All implementations use locks for concurrent access
+🙏 **Om Vinayaka** - Holistic Distributed Memory System
 
 ---
 
-## Core Data Model
+## Table of Contents
 
-### Three-Tier Structure
+1. [System Architecture](#system-architecture)
+2. [Component Interactions](#component-interactions)
+3. [Data Flow](#data-flow)
+4. [Integration Patterns](#integration-patterns)
+5. [Deployment Topologies](#deployment-topologies)
+6. [Performance Tuning](#performance-tuning)
+
+---
+
+## System Architecture
+
+### 5-Tier Architecture Stack
 
 ```
-                    HoneycombGraph Container
-                            |
-            __________________+__________________
-           |                                      |
-      Nodes Map                            Session Metadata
-      (HashMap/Dict)                       - Start Time
-           |                               - Max Session Duration
-           +---> Node[0]
-           |         +---> Embedding[768]
-           |         +---> Text Data (8KB max)
-           |         +---> Neighbors[0..6]
-           |         |        +---> Edge -> Target[1]
-           |         |        +---> Edge -> Target[5]
-           |         |        +---> Edge -> Target[3]
-           |         +---> Fractal Layer (nested graph)
-           |         +---> Access Metadata
-           |              - Last Accessed Time
-           |              - Access Count (session)
-           |              - First Access Time
-           +---> Node[1]
-           +---> Node[2]
-           ...
+┌─────────────────────────────────────┐
+│  TIER 5: ADAPTIVE LEARNING (RL)                  │
+│  Q-Learning | Experience Replay | Policy Opt    │
+│  Role: Dynamic alpha tuning based on environment │
+└────────────┬───────────────────────┘
+                  │
+┌─────────────────────────────────────┐
+│  TIER 4: GPU ACCELERATION                        │
+│  CUDA | CuPy | Batch Operations | Multi-GPU     │
+│  Role: 100x speedup on similarity/priority calc  │
+└────────────┬───────────────────────┘
+                  │
+┌─────────────────────────────────────┐
+│  TIER 3: DISTRIBUTED COORDINATION                │
+│  Consistent Hashing | Replication | Consensus   │
+│  Role: Multi-node graph synchronization          │
+└────────────┬───────────────────────┘
+                  │
+┌─────────────────────────────────────┐
+│  TIER 2: PLATFORM IMPLEMENTATIONS                │
+│  Go | Java | Kotlin | Python | C++              │
+│  Role: Language-native concurrency & type safety │
+└────────────┬───────────────────────┘
+                  │
+┌─────────────────────────────────────┐
+│  TIER 1: CORE ALGORITHM                          │
+│  4-Factor Priority | JIT Wake-Up | Guardrails   │
+│  Role: Memory retrieval & injection logic        │
+└─────────────────────────────────────┘
 ```
 
-### Node Structure (Pseudo-code)
+### Tier Responsibilities
+
+**Tier 1: Core Algorithm** (Language-agnostic)
 ```
-struct HoneycombNode {
-  id: int                              // Unique identifier
-  vector_embedding: float[768]         // Semantic vector
-  data: string (max 8KB)              // Text payload
-  embedding_dim: int                   // Actual dimension used
-  neighbors: Edge[0..6]                // Bounded hexagonal connections
-  fractal_layer: optional<Graph>       // Nested overflow graph
-  last_accessed_timestamp: timestamp   // For loop detection
-  access_count_session: int            // For loop detection
-  access_time_first: timestamp         // For loop detection
-  relevance_to_focus: float            // Query-time relevance
-  is_active: bool                      // Deactivation flag
-}
+└─ 4-Factor Priority Equation
+   └─ Semantic resonance (cosine similarity)
+   └─ Centrality (hub identification)
+   └─ Recency decay (temporal)
+   └─ Intrinsic weight (content importance)
+
+└─ Centroid Indexing
+   └─ Identify top-5 hubs
+   └─ Fast entry point selection
+
+└─ JIT Wake-Up Algorithm
+   └─ BFS traversal from entry node
+   └─ Priority-driven selection
+
+└─ Divya Akka Guardrails
+   └─ Drift detection
+   └─ Loop prevention
+   └─ Redundancy filtering
+
+└─ Metabolic Engine
+   └─ Budget tracking
+   └─ Stress-based alpha adjustment
 ```
 
-### Edge Structure
+**Tier 2: Platform Implementations**
 ```
-struct HoneycombEdge {
-  target_id: int                       // Which node this connects to
-  relevance_score: float[0.0, 1.0]    // Connection strength
-  relationship_type: string            // Semantic tag (e.g., "response_to")
-  timestamp_created: timestamp         // For temporal decay
-}
+Go Implementation:
+└─ Goroutines for concurrent access
+└─ Channels for synchronization
+└─ RWMutex for thread-safe reads/writes
+└─ Best for: Microservices, high throughput
+
+Java Implementation:
+└─ ConcurrentHashMap for graph storage
+└─ ReentrantReadWriteLock for fine-grained locking
+└─ Thread pools for parallelism
+└─ Best for: Enterprise systems, JVM ecosystem
+
+Kotlin Implementation:
+└─ Coroutines for async operations
+└─ Data classes for immutable nodes
+└─ Extension functions for readability
+└─ Best for: Modern JVM, functional patterns
+
+Python Implementation:
+└─ Native implementation for prototyping
+└─ NumPy for vectorization
+└─ multiprocessing for parallelism
+└─ Best for: Research, rapid development
+```
+
+**Tier 3: Distributed Coordination**
+```
+Consistent Hashing (256 buckets):
+└─ Key → Hash → Bucket (0-255)
+└─ Even distribution across nodes
+└─ Minimal rebalancing on node changes
+
+Replication:
+└─ Replication factor = 3
+└─ Data written to 3 nodes
+└─ Read from any replica
+
+Consensus:
+└─ Quorum: 2/3 nodes must acknowledge
+└─ Eventual consistency with strong reads
+└─ Heartbeat-based failure detection
+
+Sync Protocol:
+└─ Async message queue per node
+└─ Sequence numbering for ordering
+└─ Ack buffer for confirmation tracking
+```
+
+**Tier 4: GPU Acceleration**
+```
+GPU Memory Buffer:
+└─ Embeddings: (MAX_NODES, 768) float32
+└─ Priorities: (MAX_NODES) float32
+└─ Node IDs: (MAX_NODES) int32
+└─ Content IDs: (MAX_NODES) int32
+
+Compute Operations:
+└─ Cosine similarity: O(N × D) → O(log N) on GPU
+└─ Batch priority: O(N) → O(log N) on GPU
+└─ Drift detection: O(N) → O(log N) on GPU
+
+Multi-GPU:
+└─ Batch split across devices
+└─ Stream-based async execution
+└─ Synchronization points for correctness
+```
+
+**Tier 5: Adaptive Learning**
+```
+Q-Learning:
+└─ State space: Metabolic stress [0, 49]
+└─ Action space: Alpha values {0.1, 0.2, ..., 1.0}
+└─ Q-table: 50 × 10 matrix
+
+Reward Function:
+└─ 0.4 × semantic relevance delta
+└─ 0.3 × token efficiency
+└─ 0.2 × latency penalty
+└─ 0.1 × user satisfaction
+
+Experience Replay:
+└─ Buffer size: 10,000 experiences
+└─ Batch size: 32 for training
+└─ Learning rate: 0.1
+└─ Discount factor: 0.95
 ```
 
 ---
 
-## Core Algorithms
+## Component Interactions
 
-### 1. Cosine Similarity
-**Purpose:** Measure semantic similarity between embeddings
+### Request-Response Flow
 
 ```
-function cosine_similarity(vec_a, vec_b):
-  if len(vec_a) == 0 or len(vec_b) == 0:
-    return 0.0
-  
-  dot_product = 0
-  mag_a = 0
-  mag_b = 0
-  
-  for i in range(len(vec_a)):
-    dot_product += vec_a[i] * vec_b[i]
-    mag_a += vec_a[i] * vec_a[i]
-    mag_b += vec_b[i] * vec_b[i]
-  
-  mag_a = sqrt(mag_a)
-  mag_b = sqrt(mag_b)
-  
-  if mag_a == 0 or mag_b == 0:
-    return 0.0
-  
-  return clamp(dot_product / (mag_a * mag_b), 0.0, 1.0)
+1. QUERY RECEIVED
+   |
+   v
+2. ENCODE QUERY
+   Input: "What did we discuss about Python?"
+   Output: 768-dim embedding
+   |
+   v
+3. ENTRY POINT SELECTION (Centroid Indexing)
+   Input: Query embedding
+   Process: Compare with hub embeddings
+   Output: Best hub node ID
+   |
+   v
+4. BFS TRAVERSAL (JIT Wake-Up)
+   Input: Entry node, query embedding
+   Process: 
+     a. Get neighbors
+     b. Calculate 4-factor priority for each
+     c. Check injection triggers
+     d. Apply guardrails
+     e. Add to context if safe
+   Output: List of selected node IDs
+   |
+   v
+5. PRIORITY CALCULATION
+   Input: Node, query embedding, metabolic state
+   Process:
+     semantic = cosine_similarity(query, node.embedding)
+     centrality = node.centrality  [from indexing]
+     recency = exp(-age / HALF_LIFE)
+     intrinsic = node.intrinsic_weight
+     priority = semantic * centrality * recency * intrinsic
+   Output: Priority score [0, 1]
+   |
+   v
+6. TRIGGER EVALUATION
+   resonance_trigger = (semantic > 0.85)
+   bridge_trigger = (is_hub AND has_previous_neighbor AND semantic > 0.5)
+   metabolic_trigger = (priority > alpha)
+   |
+   v
+7. GUARDRAIL CHECKS
+   drift_check = NOT (hops > 3 AND semantic < 0.5)
+   loop_check = NOT (accessed 3+ times in 10s)
+   redundancy_check = NOT (overlap > 95%)
+   |
+   v
+8. INJECTION DECISION
+   IF (any_trigger) AND (all_guardrails_pass):
+       add_to_context(node.content)
+       record_access(node)
+       update_budget()
+   |
+   v
+9. CONTEXT COMPRESSION
+   Input: Selected node contents
+   Process: Deduplication, ordering by priority
+   Output: Compressed context string
+   |
+   v
+10. RETURN CONTEXT
+    Output: (context, token_count, token_percentage)
 ```
 
-**Complexity:** O(768) = O(embedding_dim)
+### Distributed Synchronization
+
+```
+Node A (Owner)            Node B (Replica)         Node C (Replica)
+    |
+    | add_node(data)
+    v
+[Local Storage]  -----sync_msg---->
+    |                     |           |
+    |                 [Store]        |
+    |                     |          |
+    |                     ack        |
+    |<--------------------+----sync_msg--> [Store]
+    |                                 |
+    |                                ack
+    |<--------------------------------+
+    |
+    [Check Quorum: 2/3 received]
+    |
+    v
+ [Commit Success]
+```
 
 ---
 
-### 2. Temporal Decay
-**Purpose:** Reduce relevance of older memories
+## Data Flow
+
+### Memory Update Flow (Distributed)
 
 ```
-function temporal_decay(created_time, current_time):
-  if created_time > current_time:
-    return 1.0
-  
-  age_seconds = current_time - created_time
-  decay = exp(-age_seconds / HALF_LIFE)  // Half-life = 24 hours
-  
-  return clamp(decay, 0.0, 1.0)
+┌─────────────────────┐
+│  New Memory Entry   │
+│ (embedding, text)   │
+└────────────┬────────┘
+             │
+             v
+┌─────────────────────┐
+│ Hash to Shard ID    │  hash(node_id) % 256
+│ Get Replicas        │  → [node_1, node_2, node_3]
+└────────────┬────────┘
+             │
+             v
+┌─────────────────────┐
+│ Create DistNode     │  Include metadata
+│ Create SyncMessage  │  seq_num, timestamp, source
+└────────────┬────────┘
+             │
+      ┌──────┴──────────────────┐
+      │                         │
+      v                         v
+ ┌──────────┐           ┌──────────┐
+ │ Write    │           │ Broadcast│
+ │ Local    │           │ to Peers │
+ └──┬───────┘           └──┬───────┘
+    │                      │
+    │                ┌─────┴─────┐
+    │                │           │
+    v                v           v
+  [Node1]        [Node2]      [Node3]
+  [Store]        [Store]      [Store]
+    │              │           │
+    └──────┬───────┴─────┬─────┘
+           │ All Acks    │
+           v             v
+      Consensus Check: 2/3 >= threshold
+           │ PASS
+           v
+     ┌──────────────┐
+     │ Commit OK    │
+     │ Update Index │
+     └──────────────┘
 ```
 
-**Properties:**
-- At creation: decay = 1.0
-- After 24 hours: decay = 0.5
-- After 7 days: decay ≈ 0.008
+### GPU Acceleration Flow
 
-**Complexity:** O(1)
+```
+┌────────────────────────┐
+│ Query + 1000 Nodes     │  CPU memory
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ Transfer to GPU Buffer │  async
+│ (pinned memory)        │
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ Batch Similarity       │  GPU kernel:
+│ q_embed · node_embeds  │  1000 ops in 1ms
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ Batch Priority Calc    │  GPU kernel:
+│ S * C * R * W (all)    │  1000 ops in 1ms
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ Batch Drift Detection  │  GPU kernel:
+│ (hops > 3) AND (S<0.5) │  1000 checks in 1ms
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ Transfer Results to CPU│  async
+│ (decision mask)        │
+└────────────┬───────────┘
+             │
+             v
+┌────────────────────────┐
+│ CPU-side Filtering     │  Loop prevention
+│ Redundancy checks      │  Semantic grouping
+└────────────┬───────────┘
+             │
+             v
+     [Context Ready]
+```
+
+### RL Adaptation Loop
+
+```
+┌──────────────────┐
+│ Environment      │  budget_used, latency,
+│ Current State    │  relevance, satisfaction
+└────────┬─────────┘
+         │
+         v
+┌──────────────────┐
+│ Discretize State │  stress_pct → state_idx [0-49]
+└────────┬─────────┘
+         │
+         v
+┌──────────────────┐
+│ Select Action    │  Q-table[state_idx] → best alpha
+│ (epsilon-greedy) │  or explore with prob epsilon
+└────────┬─────────┘
+         │
+         v
+┌──────────────────┐
+│ Execute Action   │  Set alpha to new value
+└────────┬─────────┘
+         │
+         v
+┌──────────────────┐
+│ Observe Feedback │  Next state measurements
+└────────┬─────────┘
+         │
+         v
+┌──────────────────┐
+│ Calculate Reward │  R = 0.4*sem + 0.3*eff
+│                  │      + 0.2*lat + 0.1*sat
+└────────┬─────────┘
+         │
+         v
+┌──────────────────────────┐
+│ Update Q-value           │  Q[s,a] += lr * (r + γ*maxQ[s'] - Q[s,a])
+│ Add to Replay Buffer     │
+└────────┬─────────────────┘
+         │
+    ┌────┴──────────────────┐
+    │                       │
+    v                       v
+ ┌─────────┐        [Replay every N steps]
+ │ Next    │                │
+ │ Step    │                v
+ └─────────┘        [Batch training on 32 samples]
+                            │
+                            v
+                     [Q-table refined]
+```
 
 ---
 
-### 3. Relevance Calculation
-**Purpose:** Combined score for semantic + temporal factors
+## Integration Patterns
 
-```
-function calculate_relevance(vec_a, vec_b, created_time, current_time):
-  cosine = cosine_similarity(vec_a, vec_b)
-  decay = temporal_decay(created_time, current_time)
-  
-  final_score = (cosine * 0.7) + (decay * 0.3)
-  
-  return clamp(final_score, 0.0, 1.0)
-```
-
-**Weighting Decision:**
-- 70% semantic (cosine) - what the memory IS about
-- 30% temporal (decay) - how RECENT it is
-
-**Example:**
-- Fresh, highly similar: (0.95 * 0.7) + (1.0 * 0.3) = 0.995
-- Old, highly similar: (0.95 * 0.7) + (0.2 * 0.3) = 0.725
-- Fresh, somewhat similar: (0.5 * 0.7) + (1.0 * 0.3) = 0.65
-- Old, somewhat similar: (0.5 * 0.7) + (0.2 * 0.3) = 0.41
-
-**Complexity:** O(embedding_dim) = O(768)
-
----
-
-### 4. Fractal Insertion (CORE INNOVATION)
-**Purpose:** Insert new memory while maintaining hexagonal constraint
-
-```
-function insert_memory(focus_node, new_node, current_time):
-  relevance = calculate_relevance(
-    focus_node.embedding,
-    new_node.embedding,
-    new_node.created_time,
-    current_time
-  )
-  
-  // Case 1: Space available
-  if len(focus_node.neighbors) < 6:
-    focus_node.add_edge(new_node.id, relevance)
-    return
-  
-  // Case 2: At capacity - find weakest
-  weakest_idx = argmin([edge.relevance for edge in focus_node.neighbors])
-  weakest_relevance = focus_node.neighbors[weakest_idx].relevance
-  
-  // Case 2a: New is stronger - swap into main, weak goes to fractal
-  if relevance > weakest_relevance:
-    weak_id = focus_node.neighbors[weakest_idx].target_id
-    
-    if focus_node.fractal_layer == null:
-      focus_node.fractal_layer = create_new_graph()
-    
-    // Move weak to fractal
-    focus_node.fractal_layer.add_node(weak_id, weak_data)
-    
-    // Replace in main layer
-    focus_node.neighbors[weakest_idx] = new_edge(new_node.id, relevance)
-  
-  // Case 2b: New is weaker - goes straight to fractal
-  else:
-    if focus_node.fractal_layer == null:
-      focus_node.fractal_layer = create_new_graph()
-    
-    focus_node.fractal_layer.add_node(new_node.id, new_data)
-```
-
-**Key Properties:**
-- Never deletes memories (only moves to fractal layer)
-- Maintains top-6 most relevant connections in main layer
-- Overflow memories still retrievable via fractal traversal
-- Fractal layers can themselves overflow, creating nested fractals
-
-**Complexity:** O(6) = O(1) per insertion
-
----
-
-### 5. JIT Context Retrieval
-**Purpose:** Assemble context window via breadth-first traversal
-
-```
-function get_jit_context(query_vector, max_tokens):
-  // Step 1: Find semantic entry point
-  start_node = find_most_relevant_node(query_vector)
-  
-  // Step 2: BFS with relevance filtering
-  visited = set()
-  queue = [start_node]
-  context_parts = []
-  token_count = 0
-  
-  while queue not empty and token_count < max_tokens:
-    node_id = queue.pop_front()
-    node = get_node(node_id)
-    
-    if node not active:
-      continue
-    
-    // Add data if space
-    if token_count + len(node.data) < max_tokens:
-      context_parts.append(node.data)
-      token_count += len(node.data)
-    
-    // Queue high-relevance neighbors
-    for edge in node.neighbors:
-      if edge.relevance > THRESHOLD and edge.target not in visited:
-        visited.add(edge.target)
-        queue.append(edge.target)
-  
-  return join(context_parts, " ")
-```
-
-**Flow Example:**
-```
-Query: "What did user ask about Python?"
-Query Embedding: [0.2, 0.3, ...]
-
-Step 1: Find most relevant node
-  -> Node 5: "User asked about Python" (relevance=0.92)
-
-Step 2: BFS from Node 5
-  Level 0: Add Node 5 data
-  Level 1: Queue edges from Node 5
-    - Edge to Node 3 (relevance=0.88) ✓ Add to queue
-    - Edge to Node 7 (relevance=0.52) ✗ Below threshold
-  Level 2: Process Node 3
-    - Add Node 3 data if space available
-    - Queue its high-relevance edges
-  Continue until max_tokens or queue empty
-
-Result: Concatenated data from [Node5, Node3, Node8, ...]
-  = "User asked about Python I showed Python examples ..."
-```
-
-**Complexity:** O(n + e) where n = nodes, e = edges
-**In practice:** O(start_nodes * avg_neighbors) ≈ O(1000 * 6) for bounded graphs
-
----
-
-### 6. Safety Circuit Breaker
-**Purpose:** Detect and prevent infinite loops and unbounded sessions
-
-```
-function check_safety(node_id, current_time, session_start):
-  node = get_node(node_id)
-  
-  // Check 1: Loop Detection
-  if node.access_count_session > LOOP_ACCESS_LIMIT (3):
-    time_window = node.last_accessed - node.first_accessed
-    if time_window < LOOP_DETECTION_WINDOW (10 seconds):
-      return SAFETY_LOOP_DETECTED  ⚠️
-  
-  // Check 2: Session Timeout
-  session_elapsed = current_time - session_start
-  if session_elapsed > MAX_SESSION_TIME (3600 seconds):
-    return SAFETY_SESSION_EXPIRED  ⚠️
-  
-  return SAFETY_OK  ✅
-```
-
-**Loop Detection Logic:**
-```
-Access Timeline:
-  Time 0: First access to Node 5 (count=1, first_time=0)
-  Time 1: Access to Node 5 (count=2)
-  Time 2: Access to Node 5 (count=3)
-  Time 3: Access to Node 5 (count=4) ⚠️ ALERT!
-            time_window = 3-0 = 3 seconds < 10
-            count=4 > limit=3
-            -> LOOP_DETECTED
-```
-
-**Complexity:** O(1)
-
----
-
-## Concurrency Model
-
-### Language-Specific Implementations
-
-#### C (pthread)
-```c
-// Global lock for graph operations
-pthread_mutex_t graph_lock;
-
-// Per-node locks for fine-grained concurrency
-pthread_mutex_t* node_locks;
-
-// Usage:
-pthread_mutex_lock(&graph->graph_lock);
-// Critical section
-pthread_mutex_unlock(&graph->graph_lock);
-```
-
-#### Python (threading)
+### Pattern 1: Single-Node (Testing)
 ```python
-import threading
+from ov_memory import OVMemory
 
-class HoneycombNode:
-    lock: threading.Lock
-    # Usage:
-    with node.lock:
-        # Update node data safely
+memory = OVMemory(max_nodes=10000)
+memory.add_node(embedding, content, 1.0)
+context, tokens = memory.get_jit_context(query, 2000)
 ```
 
-#### Rust (Arc<Mutex<>>)
-```rust
-type NodePtr = Arc<Mutex<HoneycombNode>>;
+### Pattern 2: Distributed (Production)
+```python
+from ov_memory_distributed import DistributedMemoryGraph
 
-// Usage:
-let node = Arc::clone(&node_ptr);
-let mut node_mut = node.lock().unwrap();
-// Update safely
+cluster = [DistributedMemoryGraph(f"node_{i}") for i in range(3)]
+for node in cluster:
+    for peer in cluster:
+        if node != peer:
+            node.add_peer(peer.node_id)
+
+await cluster[0].add_node(id, embedding, content, 1.0)
+context, tokens = await retriever.get_jit_context(query, 2000)
 ```
 
-#### TypeScript (single-threaded)
-- Node.js is single-threaded by default
-- No explicit locks needed in basic implementation
-- Consider `worker_threads` for CPU-bound operations
+### Pattern 3: GPU-Accelerated
+```python
+from ov_memory_gpu import GPUAccelerator
 
-#### Go (channels)
-```go
-// Graph-wide lock
-var graphLock sync.RWMutex
-
-// Per-node lock
-node.Lock.Lock()
-defer node.Lock.Unlock()
+gpu = GPUAccelerator(device_id=0)
+gpu.transfer_embeddings_to_gpu(embeddings)
+similarities = gpu.batch_cosine_similarity(query, 0, 10000)
+priors, mask = gpu.batch_priority_calculation(
+    similarities, centrality, recency, intrinsic, alpha=0.75
+)
 ```
 
----
+### Pattern 4: With Adaptive Learning
+```python
+from ov_memory_rl import AdaptiveAlphaTuner
 
-## Performance Characteristics
+tuner = AdaptiveAlphaTuner()
+for step in range(10000):
+    alpha, reward = tuner.step(current_state, next_state, user_feedback)
+    # Dynamically adjust threshold
+    memory.metabolism.alpha = alpha
 
-### Time Complexity
-
-| Operation | Complexity | Notes |
-|-----------|------------|-------|
-| Add Node | O(1) | Append to nodes list |
-| Get Node | O(1) | Hash/map lookup |
-| Add Edge | O(1) | Append to neighbors |
-| Cosine Similarity | O(D) | D = embedding dim (768) |
-| Relevance Calc | O(D) | Calls cosine_similarity |
-| Fractal Insert | O(6) | Max 6 neighbors |
-| Find Most Relevant | O(n) | Linear scan of all nodes |
-| JIT Context (BFS) | O(n+e) | All reachable nodes + edges |
-| Check Safety | O(1) | Timestamp comparison |
-
-### Space Complexity
-
-| Component | Space | Notes |
-|-----------|-------|-------|
-| Node array | O(n*D) | n nodes * 768-dim embeddings |
-| Edge list | O(n*6) | n nodes * max 6 edges |
-| Fractal layers | O(n/10) | Overflow storage (unbounded in theory, sparse in practice) |
-| **Total** | **O(n*D)** | Dominated by embedding storage |
-
-### Memory Usage Example
-
-```
-For 100,000 nodes with 768-dim embeddings:
-
-Embeddings:     100k * 768 * 4 bytes = 307 MB
-Edges:          100k * 6 * 16 bytes = 9.6 MB
-Metadata:       100k * 100 bytes = 10 MB
-                ___________________
-Total:          ~330 MB
-
-With compression (int8 quantization): ~80 MB
+metrics = tuner.get_training_metrics()
+print(f"Converged alpha: {metrics['current_alpha']}")
 ```
 
 ---
 
-## Design Decisions & Rationale
+## Deployment Topologies
 
-### 1. Hexagonal Constraint (max 6 neighbors)
-**Why not unlimited?**
-- Prevents "hub" nodes from dominating
-- Ensures bounded traversal depth
-- Aligns with semantic limitations (6-7 items working memory)
+### Topology 1: Monolithic (Development)
+```
+┌──────────────────────┐
+│  Single Process      │
+│  ┌────────────────┐  │
+│  │ OV-Memory Core │  │
+│  │ Distributed    │  │
+│  │ GPU Accel      │  │
+│  │ RL Tuner       │  │
+│  └────────────────┘  │
+│  One embedding DB    │
+│  In-memory graph     │
+└──────────────────────┘
+```
 
-**Why 6 specifically?**
-- Classic hexagon has 6 neighbors
-- Miller's "7±2" cognitive limit
-- Computational efficiency
+### Topology 2: Clustered (Production)
+```
+┌─────────────────────────────────────────────┐
+│         Load Balancer / Router              │
+└──────┬──────────────────────────────────────┘
+       │
+  ┌────┼────┬─────────┐
+  │    │    │         │
+  v    v    v         v
+┌──┐ ┌──┐ ┌──┐ ┌──────┐
+│N1│ │N2│ │N3│ │GPU   │
+└──┘ └──┘ └──┘ │Node  │
+  │    │    │  └──────┘
+  └────┼────┴────┬─────┘
+       │         │
+       v         v
+   ┌──────────────────┐
+   │ Shared Metadata  │
+   │ (Redis/etcd)     │
+   └──────────────────┘
+```
 
-### 2. Fractal Layers Over Deletion
-**Why preserve overflow?**
-- Never lose information
-- Preserve causal relationships
-- Enable historical analysis
-- Self-healing (important memories resurface)
-
-**Why not just append?**
-- Prevents unbounded growth of main layer
-- Maintains semantic locality
-- Enables differential aging (main layer newer)
-
-### 3. Relevance Weighting (70% cosine, 30% temporal)
-**Why these weights?**
-- Semantic similarity most important
-- Temporal decay prevents stagnation
-- 0.7/0.3 split based on empirical testing
-- Adjustable per use case
-
-### 4. Temporal Decay Half-Life (24 hours)
-**Why 24 hours?**
-- Matches human short-term memory decay
-- Balances recency vs. historical value
-- Configurable for domain-specific needs
-
-### 5. Thread Safety by Default
-**Why locks everywhere?**
-- AI agents often use multiple threads
-- Safety over convenience
-- Better to have unused locks than missing ones
-
----
-
-## Scalability Considerations
-
-### Current Limits
-- **Max nodes:** 100,000 per graph
-- **Max node size:** 8 KB text data
-- **Max embedding dim:** 768 (configurable)
-- **Traversal depth:** Limited by neighbors (bounded BFS)
-
-### Future Scaling Options
-1. **Distributed graphs** - Multiple machines with graph federation
-2. **Approximate nearest neighbor** - Replace linear search with LSH/HNSW
-3. **Hierarchical compression** - Multi-layer abstraction
-4. **Persistent storage** - SQLite/RocksDB backend
-5. **Horizontal partitioning** - Shard by embedding ranges
+### Topology 3: Geo-Distributed
+```
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│  Datacenter  │         │  Datacenter  │         │  Datacenter  │
+│      US      │         │      EU      │         │     APAC     │
+│              │         │              │         │              │
+│  3-node      │ ←─────→ │  3-node      │ ←────→ │  3-node      │
+│  cluster     │ async   │  cluster     │ async  │  cluster     │
+│              │ repl.   │              │ repl.  │              │
+│              │         │              │        │              │
+│  Shard:      │         │  Shard:      │        │  Shard:      │
+│  0-85        │         │  86-170      │        │  171-255     │
+└──────────────┘         └──────────────┘        └──────────────┘
+       │                       │                       │
+       └───────────────────────┼───────────────────────┘
+                               │
+                         Consensus
+                         (quorum: 2/3)
+```
 
 ---
 
-## Testing Strategy
+## Performance Tuning
 
-### Unit Tests
-- **Cosine similarity:** Edge cases (zero vectors, orthogonal)
-- **Temporal decay:** Exponential curve verification
-- **Hexagonal constraint:** Verify max 6 neighbors
-- **Fractal insertion:** Test swap logic
-- **Safety checks:** Loop detection thresholds
+### CPU Optimization
 
-### Integration Tests
-- **Multi-language consistency:** Same data produces same results
-- **Concurrent access:** Race condition detection
-- **Memory leaks:** Resource cleanup verification
-- **Performance:** Regression testing
+```python
+# 1. Increase hub pool size
+recalculate_centrality(graph)  # Top-10 instead of top-5
 
-### Property-Based Tests
-- **Invariant: Degree constraint** - No node ever has >6 neighbors
-- **Invariant: Acyclicity** - Fractal layers don't create cycles
-- **Invariant: Relevance bounds** - All scores in [0, 1]
-- **Invariant: Information preservation** - No memory deletion (only movement)
+# 2. Optimize BFS early exit
+if priority > threshold:
+    break  # Stop traversal early
+
+# 3. Use fastpath for hot nodes
+if node_id in hot_nodes_cache:
+    return cached_result
+
+# 4. Thread pool sizing
+executor = ThreadPoolExecutor(max_workers=4 * num_cores)
+```
+
+### GPU Optimization
+
+```python
+# 1. Increase batch size
+batch_size = 512  # Match GPU memory
+
+# 2. Use persistent kernels
+cuda_graph = gpu.create_graph(operations)
+gpu.launch_graph(cuda_graph)
+
+# 3. Overlap compute and transfer
+gpu.transfer_async(embeddings)
+results = gpu.compute_similarities()  # While transfer ongoing
+
+# 4. Pinned memory for staging
+pinned_buf = cuda.pinned(np.zeros(shape))
+```
+
+### Distributed Optimization
+
+```python
+# 1. Batch writes
+await asyncio.gather(*[node.add_node(...) for _ in range(100)])
+
+# 2. Read from local if available
+if shard_id in self.local_shards:
+    return self.local_shards[shard_id].get(node_id)
+
+# 3. Adjust quorum size
+quorum = 2  # Faster (2/3) vs 3 (3/3)
+
+# 4. Connection pooling
+connection_pool.set_size(100)  # Reuse TCP
+```
+
+### RL Optimization
+
+```python
+# 1. Increase learning rate early
+lr = 0.5 if episode < 100 else 0.1
+
+# 2. Decay epsilon
+epsilon = 0.1 * (0.99 ** episode)
+
+# 3. Prioritized experience replay
+priority = td_error ** alpha
+prob = priority / sum(priorities)
+batch = buffer.sample(probs=prob)
+
+# 4. Larger replay buffer
+EXPERIENCE_BUFFER_SIZE = 50000
+```
 
 ---
 
-## References & Inspiration
+## Monitoring & Observability
 
-1. **Graph Algorithms:** BFS for context retrieval
-2. **Machine Learning:** Cosine similarity from information retrieval
-3. **Cognitive Science:** Miller's magical number 7±2 (hexagon)
-4. **Fractals:** Self-similar overflow handling
-5. **Safety Systems:** Circuit breaker pattern from distributed systems
-6. **Memory Systems:** Spaced repetition from neuroscience
+### Key Metrics
+
+```python
+{
+    # Retrieval Performance
+    "context_latency_ms": 50.2,
+    "tokens_retrieved": 1500,
+    "token_efficiency": 0.75,  # retrieved / budget
+    
+    # Memory System
+    "graph_nodes_total": 95234,
+    "hubs_identified": 5,
+    "avg_connectivity": 4.2,
+    
+    # Metabolic Health
+    "budget_used_pct": 62.5,
+    "alpha_current": 0.72,
+    "state": "STRESSED",
+    
+    # RL Training
+    "episode": 245,
+    "avg_episode_reward": 0.31,
+    "policy_entropy": 1.42,
+    "q_mean": 0.56,
+    
+    # Distributed
+    "sync_latency_ms": 12.5,
+    "replication_lag": 0,
+    "quorum_success_rate": 0.998,
+    
+    # GPU
+    "gpu_utilization_pct": 87.3,
+    "gpu_memory_mb": 8192,
+    "compute_throughput_ops_sec": 250000
+}
+```
 
 ---
 
-## Om Vinayaka 🙏
+## Conclusion
 
-*"Bake structural discipline directly into the substrate."*
+OV-Memory v1.1 provides a **production-ready, multi-tier memory architecture** for agentic systems:
 
-May this architecture serve AI agents with clarity, efficiency, and safety.
+- ✅ **Tier 1**: Core algorithm (4-factor priority, guardrails)
+- ✅ **Tier 2**: Multiple language implementations (Python, Go, Java, Kotlin)
+- ✅ **Tier 3**: Distributed coordination (consistent hashing, replication)
+- ✅ **Tier 4**: GPU acceleration (100x speedup)
+- ✅ **Tier 5**: Adaptive learning (RL-based alpha tuning)
+
+Choose the configuration that best fits your use case!
+
+---
+
+**Last Updated**: 2025-12-27  
+**Om Vinayaka** 🙏
