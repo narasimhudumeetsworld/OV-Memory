@@ -1,0 +1,1645 @@
+[
+  {
+    "id": "code_q1",
+    "category": "Frontend - React",
+    "query": "How do you pass data to a child component?",
+    "ground_truth": {
+      "text": "Data is passed to child components via 'props' (properties), which are read-only.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Data is passed using the `sendData()` method.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "You use `super.data` to push variables down.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q2",
+    "category": "Frontend - CSS",
+    "query": "How to make a flex container wrap items?",
+    "ground_truth": {
+      "text": "Set the property `flex-wrap: wrap;` on the container.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `display: block-wrap;`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Set `overflow: wrap;` on the items.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q3",
+    "category": "Frontend - JS Async",
+    "query": "What does `Promise.all()` do?",
+    "ground_truth": {
+      "text": "It takes an array of promises and resolves when *all* of them have resolved, or rejects if *any* reject.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "It runs promises one by one in sequence.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "It returns the first promise that resolves.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q4",
+    "category": "Frontend - Accessibility",
+    "query": "What is the purpose of the `alt` attribute on images?",
+    "ground_truth": {
+      "text": "It provides alternative text for screen readers and when the image fails to load.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "It sets the tooltip title of the image.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "It is used for SEO keywords only.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q5",
+    "category": "Frontend - Vue",
+    "query": "How do you bind an input value in Vue?",
+    "ground_truth": {
+      "text": "Use the `v-model` directive for two-way data binding.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `ng-model` like in Angular.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `bind:value` only.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q6",
+    "category": "Frontend - Tailwind",
+    "query": "How to center text in Tailwind CSS?",
+    "ground_truth": {
+      "text": "Use the class `text-center`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `align-middle`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `center-text`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q7",
+    "category": "Frontend - DOM",
+    "query": "How to select an element by ID in vanilla JS?",
+    "ground_truth": {
+      "text": "Use `document.getElementById('id_name')`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `window.select('#id_name')`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `document.find('id_name')`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q8",
+    "category": "Frontend - Performance",
+    "query": "What is lazy loading images?",
+    "ground_truth": {
+      "text": "Deferring the loading of images until they are about to enter the viewport.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Loading images in low resolution first.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Compressing images before upload.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q9",
+    "category": "Backend - Node.js",
+    "query": "How to read a file asynchronously in Node?",
+    "ground_truth": {
+      "text": "Use `fs.readFile()` with a callback or `fs.promises.readFile()`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `fs.readSync()` which is faster.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `file.openAsync()`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q10",
+    "category": "Backend - Python Flask",
+    "query": "How to define a route in Flask?",
+    "ground_truth": {
+      "text": "Use the `@app.route('/path')` decorator above the function.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `app.get('/path')` like Express.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Define it in the `routes.xml` file.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q11",
+    "category": "Backend - API Design",
+    "query": "What is the difference between PUT and PATCH?",
+    "ground_truth": {
+      "text": "PUT replaces the entire resource, while PATCH updates only specific fields.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "PUT creates a new file, PATCH fixes bugs.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "They are exactly the same.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q12",
+    "category": "Backend - Go",
+    "query": "How do you export a function in Go?",
+    "ground_truth": {
+      "text": "Capitalize the first letter of the function name (e.g., `func Exported()`).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use the `export` keyword before the function.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Add it to `module.exports`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q13",
+    "category": "Backend - Java Spring",
+    "query": "What annotation marks a class as a Service?",
+    "ground_truth": {
+      "text": "Use the `@Service` annotation.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `@Component(type='service')`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `@Bean`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q14",
+    "category": "Backend - Middleware",
+    "query": "What is the purpose of middleware in Express?",
+    "ground_truth": {
+      "text": "To execute code, modify request/response objects, and end the cycle or call the next function.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "To connect to the database.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "To render HTML templates.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q15",
+    "category": "Backend - Django",
+    "query": "Command to create migrations in Django?",
+    "ground_truth": {
+      "text": "Run `python manage.py makemigrations`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Run `django-admin migrate-db`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Run `python manage.py create-schema`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q16",
+    "category": "Backend - Caching",
+    "query": "What is the benefit of Redis?",
+    "ground_truth": {
+      "text": "It is an in-memory key-value store used for high-speed caching and message brokering.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "It is a relational database for long-term storage.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "It is a frontend framework.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q17",
+    "category": "Database - SQL",
+    "query": "How to select unique values from a column?",
+    "ground_truth": {
+      "text": "Use `SELECT DISTINCT column_name FROM table`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `SELECT UNIQUE column_name`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `SELECT ALL column_name`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q18",
+    "category": "Database - Indexing",
+    "query": "Why create an index on a database column?",
+    "ground_truth": {
+      "text": "To speed up data retrieval operations (SELECT) at the cost of slower writes.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "To encrypt the column data.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "To make the column unique automatically.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q19",
+    "category": "Database - MongoDB",
+    "query": "How to find documents in a collection?",
+    "ground_truth": {
+      "text": "Use `db.collection.find({ query })`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `db.collection.select({ query })`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `db.collection.search({ query })`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q20",
+    "category": "Database - ACID",
+    "query": "What does the 'A' in ACID stand for?",
+    "ground_truth": {
+      "text": "Atomicity: Transactions are all-or-nothing.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Availability: The database is always up.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Accuracy: Data is always correct.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q21",
+    "category": "Database - Joins",
+    "query": "What is a LEFT JOIN?",
+    "ground_truth": {
+      "text": "Returns all records from the left table, and the matched records from the right table.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Returns only records that match in both tables.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Returns everything from the right table.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q22",
+    "category": "Database - Primary Key",
+    "query": "Can a Primary Key contain NULL values?",
+    "ground_truth": {
+      "text": "No, a Primary Key must be unique and NOT NULL.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Yes, if it is a composite key.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Yes, one NULL is allowed.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q23",
+    "category": "DevOps - Dockerfile",
+    "query": "Which instruction sets the base image?",
+    "ground_truth": {
+      "text": "The `FROM` instruction (e.g., `FROM node:14`).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The `BASE` instruction.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "The `IMPORT` instruction.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q24",
+    "category": "DevOps - CI/CD",
+    "query": "What is the main goal of CI (Continuous Integration)?",
+    "ground_truth": {
+      "text": "To frequently merge code changes into a central repository where builds and tests run automatically.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "To deploy code to production immediately.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "To write code faster.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q25",
+    "category": "DevOps - Kubernetes",
+    "query": "What is a Pod in Kubernetes?",
+    "ground_truth": {
+      "text": "The smallest deployable unit, representing a single instance of a running process (one or more containers).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "A node in the cluster.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "A virtual machine.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q26",
+    "category": "DevOps - Git",
+    "query": "Command to undo the last commit but keep changes staged?",
+    "ground_truth": {
+      "text": "Run `git reset --soft HEAD~1`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Run `git revert HEAD`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Run `git checkout .`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q27",
+    "category": "DevOps - AWS S3",
+    "query": "What is an S3 Bucket?",
+    "ground_truth": {
+      "text": "A container for storing objects (files) in AWS Simple Storage Service.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "A virtual server instance.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "A database table.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q28",
+    "category": "DevOps - Linux",
+    "query": "Command to change file permissions?",
+    "ground_truth": {
+      "text": "Use `chmod` (e.g., `chmod 755 file`).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `chown`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `permit`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q29",
+    "category": "DevOps - Nginx",
+    "query": "What is Nginx primarily used for?",
+    "ground_truth": {
+      "text": "As a web server, reverse proxy, load balancer, and HTTP cache.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "As a database engine.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "As a programming language.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q30",
+    "category": "DevOps - Bash",
+    "query": "How to print a variable in Bash?",
+    "ground_truth": {
+      "text": "Use `echo $VARIABLE_NAME`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use `print variable`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Use `cat variable`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q31",
+    "category": "Security - XSS",
+    "query": "What is Cross-Site Scripting (XSS)?",
+    "ground_truth": {
+      "text": "An attack where malicious scripts are injected into trusted websites viewed by other users.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "An attack that guesses passwords.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "An attack that floods the server with traffic.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q32",
+    "category": "Security - Hashing",
+    "query": "Should you encrypt passwords?",
+    "ground_truth": {
+      "text": "No, you should HASH and SALT passwords (one-way), not encrypt them (two-way).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Yes, always encrypt them so you can decrypt them later.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Just store them in plain text.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q33",
+    "category": "Security - CSRF",
+    "query": "How to prevent CSRF attacks?",
+    "ground_truth": {
+      "text": "Use Anti-CSRF tokens (synchronizer tokens) that are validated on the server.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Use HTTPS.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Disable JavaScript.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q34",
+    "category": "Security - JWT",
+    "query": "What is a JWT used for?",
+    "ground_truth": {
+      "text": "JSON Web Tokens are used for stateless authentication and information exchange.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Encrypting the database.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Compressing images.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q35",
+    "category": "Security - SQL Injection",
+    "query": "Why is `1=1` dangerous in SQL injection?",
+    "ground_truth": {
+      "text": "It is a tautology (always true) used to bypass authentication logic (e.g., `OR 1=1`).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "It deletes the database.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "It creates an infinite loop.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q36",
+    "category": "Python - GIL",
+    "query": "What is the GIL?",
+    "ground_truth": {
+      "text": "The Global Interpreter Lock, which allows only one thread to execute Python bytecode at a time.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The Global Interface Library.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "A tool for memory management.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q37",
+    "category": "Python - Decorators",
+    "query": "What is a decorator?",
+    "ground_truth": {
+      "text": "A function that takes another function and extends its behavior without explicitly modifying it.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "A class for styling UI.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "A comment in the code.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q38",
+    "category": "Python - Generators",
+    "query": "What keyword creates a generator?",
+    "ground_truth": {
+      "text": "The `yield` keyword.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The `return` keyword.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "The `generate` keyword.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q39",
+    "category": "Python - List Comp",
+    "query": "Syntax for a basic list comprehension?",
+    "ground_truth": {
+      "text": "`[expression for item in list]`.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "`list.map(item => expression)`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "`for item in list: expression`.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q40",
+    "category": "Python - `__init__`",
+    "query": "What is `__init__`?",
+    "ground_truth": {
+      "text": "The constructor method for initializing a class instance.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The method that runs when the program starts.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "A module importer.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q41",
+    "category": "Mobile - Android",
+    "query": "Language primarily used for modern Android dev?",
+    "ground_truth": {
+      "text": "Kotlin is the preferred language, replacing Java.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Swift.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "C#.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q42",
+    "category": "Mobile - iOS",
+    "query": "What is the UI framework for modern iOS?",
+    "ground_truth": {
+      "text": "SwiftUI (declarative) or UIKit (imperative).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Flutter.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "CocoaPops.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q43",
+    "category": "Mobile - React Native",
+    "query": "What component renders a view?",
+    "ground_truth": {
+      "text": "The `<View>` component.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The `<div>` component.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "The `<Container>` component.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q44",
+    "category": "Mobile - APK",
+    "query": "What is an APK?",
+    "ground_truth": {
+      "text": "Android Package Kit, the file format for distributing Android apps.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Apple Package Kit.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Application Primary Key.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q45",
+    "category": "Mobile - Flutter",
+    "query": "What language does Flutter use?",
+    "ground_truth": {
+      "text": "Dart.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Go.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Java.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q46",
+    "category": "Algo - Big O",
+    "query": "What is the Big O of binary search?",
+    "ground_truth": {
+      "text": "O(log n).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "O(n).",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "O(1).",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q47",
+    "category": "Algo - Sorting",
+    "query": "Which sort is usually fastest in practice?",
+    "ground_truth": {
+      "text": "Quicksort (or Timsort in Python/Java).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Bubble Sort.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Selection Sort.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q48",
+    "category": "Algo - Stack",
+    "query": "LIFO stands for?",
+    "ground_truth": {
+      "text": "Last In, First Out (Stack behavior).",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Low Input, Fast Output.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Linear In, First Out.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q49",
+    "category": "Algo - Hash Map",
+    "query": "Average time complexity for lookup?",
+    "ground_truth": {
+      "text": "O(1) on average.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "O(n).",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "O(log n).",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q50",
+    "category": "Algo - Recursion",
+    "query": "What is the base case?",
+    "ground_truth": {
+      "text": "The condition that stops the recursion to prevent infinite loops.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "The first line of the function.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "The largest input value.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q51",
+    "category": "Testing - Unit",
+    "query": "What does a unit test verify?",
+    "ground_truth": {
+      "text": "It verifies the smallest testable part of an application (e.g., a function) in isolation.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "It tests the whole system end-to-end.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "It checks the UI design.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q52",
+    "category": "Testing - Mocking",
+    "query": "Why mock dependencies?",
+    "ground_truth": {
+      "text": "To isolate the code under test and control the behavior of external dependencies.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "To make the code run faster in production.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "To copy the database.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  },
+  {
+    "id": "code_q53",
+    "category": "Testing - TDD",
+    "query": "What is TDD cycle?",
+    "ground_truth": {
+      "text": "Red-Green-Refactor: Write failing test, make it pass, clean up code.",
+      "metadata": {
+        "centrality": 0.95,
+        "recency": 1.0,
+        "weight": 1.0
+      }
+    },
+    "distractors": [
+      {
+        "text": "Write code, then write tests.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      },
+      {
+        "text": "Test during deployment.",
+        "metadata": {
+          "centrality": 0.3,
+          "recency": 0.4,
+          "weight": 0.3
+        }
+      }
+    ]
+  }
+]
