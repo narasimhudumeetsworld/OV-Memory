@@ -350,7 +350,7 @@ Resource Limits
 
 ## 📃 License
 
-Apache License 2.0 - See [LICENSE](LICENSE)
+See [LICENSE](LICENSE)
 
 ---
 
@@ -358,7 +358,7 @@ Apache License 2.0 - See [LICENSE](LICENSE)
 
 **Om Vinayaka 🙏**
 
-Built for the AI community. Production-ready, battle-tested, and ready for scale.
+Built for the AI community. Production-ready, and ready for scale.
 
 ---
 
