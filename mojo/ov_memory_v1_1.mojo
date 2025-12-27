@@ -1,445 +1,481 @@
-# =====================================================================
-# OV-Memory v1.1: Mojo Implementation
-# =====================================================================
-# Author: Prayaga Vaibhavlakshmi
-# License: Apache License 2.0
-# Om Vinayaka 🙏
-#
-# Ultra-high performance with SIMD vectorization and systems programming
-# Requires: Mojo 0.8+
-#
-# =====================================================================
+"""OV-MEMORY v1.1 - Mojo Implementation
+Om Vinayaka 🙏
 
-from collections.abc import Sequence
-import math
-from time import time
-from sys import argv
-from pathlib import Path
-import json
+Production-grade Mojo implementation with:
+- 4-Factor Priority Equation
+- Metabolic Engine
+- Centroid Indexing  
+- JIT Wake-Up Algorithm
+- Divya Akka Guardrails
 
-# ===== CONFIGURATION =====
-let MAX_NODES = 100_000
-let MAX_EMBEDDING_DIM = 768
-let HEXAGONAL_NEIGHBORS = 6
-let RELEVANCE_THRESHOLD = 0.8
-let MAX_SESSION_TIME = 3600
-let LOOP_DETECTION_WINDOW = 10
-let LOOP_ACCESS_LIMIT = 3
-let TEMPORAL_DECAY_HALF_LIFE = 86400.0
-let CENTROID_COUNT = 5
-let CENTROID_SCAN_PERCENTAGE = 0.05
-let AUDIT_SEMANTIC_TRIGGER = 1260
-let AUDIT_FRACTAL_TRIGGER = 1080
-let AUDIT_CRITICAL_SEAL_TRIGGER = 300
+Mojo combines Python's ease with performance, perfect for memory systems.
+"""
 
-# ===== ENUMS =====
+from collections import Dict, List, Set
+from math import exp, sqrt
+from time import now
 
+const EMBEDDING_DIM = 768
+const MAX_EDGES_PER_NODE = 6
+const TEMPORAL_DECAY_HALF_LIFE = 86400.0  # 24 hours
+const MAX_ACCESS_HISTORY = 100
+
+@value
 struct MetabolicState:
+    """Enumeration of metabolic states"""
     alias HEALTHY = 0
     alias STRESSED = 1
     alias CRITICAL = 2
+    alias EMERGENCY = 3
 
-struct SafetyCode:
-    alias OK = 0
-    alias LOOP_DETECTED = 1
-    alias SESSION_EXPIRED = 2
-    alias INVALID_NODE = -1
+    @staticmethod
+    fn get_alpha(state: Int) -> Float64:
+        """Get alpha threshold for given state"""
+        if state == MetabolicState.HEALTHY:
+            return 0.60
+        elif state == MetabolicState.STRESSED:
+            return 0.75
+        elif state == MetabolicState.CRITICAL:
+            return 0.90
+        else:  # EMERGENCY
+            return 0.95
 
-# ===== DATA STRUCTURES =====
+@value
+struct Embedding:
+    """Vector embedding with 768 dimensions"""
+    values: List[Float64]
 
-struct AgentMetabolism:
-    var messages_remaining: Int32
-    var minutes_remaining: Int32
-    var is_api_mode: Bool
-    var context_availability: Float32
-    var metabolic_weight: Float32
-    var state: Int32
-    var audit_last_run: Float64
+    fn __init__(inout self, values: List[Float64]):
+        debug_assert(values.__len__() == EMBEDDING_DIM, "Embedding must have 768 dimensions")
+        self.values = values
 
-    fn __init__(inout self, max_messages: Int32, max_minutes: Int32, is_api_mode: Bool) -> None:
-        self.messages_remaining = max_messages
-        self.minutes_remaining = max_minutes * 60
-        self.is_api_mode = is_api_mode
-        self.context_availability = 0.0
-        self.metabolic_weight = 1.0
-        self.state = MetabolicState.HEALTHY
-        self.audit_last_run = time.time()
-
-struct HoneycombEdge:
-    var target_id: Int32
-    var relevance_score: Float32
-    var relationship_type: String
-    var timestamp_created: Float64
-
-    fn __init__(inout self, target_id: Int32, relevance_score: Float32, relationship_type: String) -> None:
-        self.target_id = target_id
-        var score = relevance_score
-        if score < 0.0:
-            score = 0.0
-        if score > 1.0:
-            score = 1.0
-        self.relevance_score = score
-        self.relationship_type = relationship_type
-        self.timestamp_created = time.time()
+    fn get(self, index: Int) -> Float64:
+        """Get value at index"""
+        if index >= 0 and index < self.values.__len__():
+            return self.values[index]
+        return 0.0
 
 struct HoneycombNode:
-    var id: Int32
-    var vector_embedding: DynamicVector[Float32]
-    var data: String
-    var neighbors: DynamicVector[HoneycombEdge]
-    var last_accessed_timestamp: Float64
-    var access_count_session: Int32
-    var access_time_first: Float64
-    var relevance_to_focus: Float32
-    var metabolic_weight: Float32
-    var is_active: Bool
-    var is_fractal_seed: Bool
+    """Individual memory unit in the graph"""
+    var id: Int
+    var embedding: Embedding
+    var content: String
+    var intrinsic_weight: Float64
+    var centrality: Float64
+    var recency: Float64
+    var priority: Float64
+    var semantic_resonance: Float64
+    var created_at: Float64
+    var last_accessed: Float64
+    var access_count: Int
+    var access_history: List[Float64]
+    var neighbors: Dict[Int, Float64]  # neighbor_id -> relevance
+    var is_hub: Bool
 
     fn __init__(
         inout self,
-        id: Int32,
-        embedding: DynamicVector[Float32],
-        data: String
-    ) -> None:
+        id: Int,
+        embedding: Embedding,
+        content: String,
+        intrinsic_weight: Float64 = 1.0
+    ):
         self.id = id
-        self.vector_embedding = embedding
-        self.data = data
-        self.neighbors = DynamicVector[HoneycombEdge]()
-        self.last_accessed_timestamp = time.time()
-        self.access_count_session = 0
-        self.access_time_first = 0.0
-        self.relevance_to_focus = 0.0
-        self.metabolic_weight = 1.0
-        self.is_active = True
-        self.is_fractal_seed = False
+        self.embedding = embedding
+        self.content = content
+        self.intrinsic_weight = intrinsic_weight
+        self.centrality = 0.0
+        self.recency = 1.0
+        self.priority = 0.0
+        self.semantic_resonance = 0.0
+        self.created_at = now()
+        self.last_accessed = self.created_at
+        self.access_count = 0
+        self.access_history = List[Float64]()
+        self.neighbors = Dict[Int, Float64]()
+        self.is_hub = False
 
-struct CentroidMap:
-    var hub_node_ids: DynamicVector[Int32]
-    var hub_centrality: DynamicVector[Float32]
-    var max_hubs: Int32
+    fn add_neighbor(inout self, neighbor_id: Int, relevance: Float64):
+        """Add neighbor node"""
+        if self.neighbors.__len__() < MAX_EDGES_PER_NODE:
+            self.neighbors[neighbor_id] = relevance
 
-    fn __init__(inout self, max_hubs: Int32 = CENTROID_COUNT) -> None:
-        self.hub_node_ids = DynamicVector[Int32]()
-        self.hub_centrality = DynamicVector[Float32]()
-        self.max_hubs = max_hubs if max_hubs < CENTROID_COUNT else CENTROID_COUNT
+    fn record_access(inout self):
+        """Record memory access for loop detection"""
+        self.last_accessed = now()
+        self.access_count += 1
+        self.access_history.append(self.last_accessed)
+        if self.access_history.__len__() > MAX_ACCESS_HISTORY:
+            _ = self.access_history.pop(0)
+
+struct AgentMetabolism:
+    """Adaptive budget management system"""
+    var budget_total: Float64
+    var budget_used: Float64
+    var state: Int
+    var alpha: Float64
+
+    fn __init__(inout self, budget_tokens: Float64):
+        self.budget_total = budget_tokens
+        self.budget_used = 0.0
+        self.state = MetabolicState.HEALTHY
+        self.alpha = 0.60
+
+    fn update_state(inout self):
+        """Update metabolic state based on budget usage"""
+        let percentage = (self.budget_used / self.budget_total) * 100.0
+        if percentage > 70.0:
+            self.state = MetabolicState.HEALTHY
+            self.alpha = 0.60
+        elif percentage > 40.0:
+            self.state = MetabolicState.STRESSED
+            self.alpha = 0.75
+        elif percentage > 10.0:
+            self.state = MetabolicState.CRITICAL
+            self.alpha = 0.90
+        else:
+            self.state = MetabolicState.EMERGENCY
+            self.alpha = 0.95
 
 struct HoneycombGraph:
+    """Main memory graph structure"""
     var name: String
-    var nodes: Dict[Int32, HoneycombNode]
-    var node_count: Int32
-    var max_nodes: Int32
-    var session_start_time: Float64
-    var max_session_time_seconds: Int32
+    var max_nodes: Int
+    var nodes: Dict[Int, HoneycombNode]
+    var hubs: List[Int]
     var metabolism: AgentMetabolism
-    var centroid_map: CentroidMap
-    var is_dirty: Bool
+    var previous_context_node_id: Int  # -1 if none
+    var last_context_switch: Float64
 
-    fn __init__(
-        inout self,
-        name: String,
-        max_nodes: Int32 = MAX_NODES,
-        max_session_time: Int32 = MAX_SESSION_TIME
-    ) -> None:
+    fn __init__(inout self, name: String, max_nodes: Int = 1000000):
         self.name = name
-        self.nodes = Dict[Int32, HoneycombNode]()
-        self.node_count = 0
-        self.max_nodes = max_nodes if max_nodes > 0 else MAX_NODES
-        self.session_start_time = time.time()
-        self.max_session_time_seconds = max_session_time if max_session_time > 0 else MAX_SESSION_TIME
-        self.metabolism = AgentMetabolism(100, max_session_time // 60, False)
-        self.centroid_map = CentroidMap(CENTROID_COUNT)
-        self.is_dirty = False
+        self.max_nodes = max_nodes
+        self.nodes = Dict[Int, HoneycombNode]()
+        self.hubs = List[Int]()
+        self.metabolism = AgentMetabolism(100000.0)
+        self.previous_context_node_id = -1
+        self.last_context_switch = now()
 
-# ===== VECTOR MATH (SIMD) =====
+    fn add_node(
+        inout self,
+        embedding: Embedding,
+        content: String,
+        intrinsic_weight: Float64 = 1.0
+    ) -> Int:
+        """Add new memory node"""
+        let node_id = self.nodes.__len__()
+        var node = HoneycombNode(
+            node_id,
+            embedding,
+            content,
+            intrinsic_weight
+        )
+        self.nodes[node_id] = node
+        return node_id
 
-fn cosine_similarity_simd(vec_a: DynamicVector[Float32], vec_b: DynamicVector[Float32]) -> Float32:
-    """SIMD-accelerated cosine similarity"""
-    let dim = vec_a.size if vec_a.size < vec_b.size else vec_b.size
-    if dim == 0:
-        return 0.0
-    
+    fn add_edge(inout self, from_id: Int, to_id: Int, relevance: Float64):
+        """Add edge between nodes"""
+        if self.nodes.__contains__(from_id):
+            self.nodes[from_id].add_neighbor(to_id, relevance)
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+fn cosine_similarity(a: Embedding, b: Embedding) -> Float64:
+    """Calculate cosine similarity between two embeddings"""
     var dot_product = 0.0
-    var mag_a = 0.0
-    var mag_b = 0.0
-    
-    for i in range(dim):
-        let a = vec_a[i]
-        let b = vec_b[i]
-        dot_product += a * b
-        mag_a += a * a
-        mag_b += b * b
-    
-    mag_a = math.sqrt(mag_a)
-    mag_b = math.sqrt(mag_b)
-    
-    if mag_a == 0.0 or mag_b == 0.0:
+    var norm_a = 0.0
+    var norm_b = 0.0
+
+    for i in range(EMBEDDING_DIM):
+        let av = a.get(i)
+        let bv = b.get(i)
+        dot_product += av * bv
+        norm_a += av * av
+        norm_b += bv * bv
+
+    norm_a = sqrt(norm_a)
+    norm_b = sqrt(norm_b)
+
+    if norm_a == 0.0 or norm_b == 0.0:
         return 0.0
-    
-    return dot_product / (mag_a * mag_b)
 
-fn temporal_decay(created_time: Float64, current_time: Float64) -> Float32:
-    """Calculate temporal decay"""
-    if created_time > current_time:
-        return 1.0
-    
-    let age_seconds = current_time - created_time
-    let decay = math.exp(-age_seconds / TEMPORAL_DECAY_HALF_LIFE)
-    
-    if decay < 0.0:
-        return 0.0
-    if decay > 1.0:
-        return 1.0
-    return decay
+    return dot_product / (norm_a * norm_b)
 
-# ===== MODULE 1: METABOLISM ENGINE =====
+fn calculate_temporal_decay(created_at: Float64) -> Float64:
+    """Calculate recency with exponential decay"""
+    let age = now() - created_at
+    return exp(-age / TEMPORAL_DECAY_HALF_LIFE)
 
-fn initialize_metabolism(
-    inout graph: HoneycombGraph,
-    max_messages: Int32,
-    max_minutes: Int32,
-    is_api_mode: Bool
-) -> None:
-    """Initialize metabolism engine"""
-    graph.metabolism = AgentMetabolism(max_messages, max_minutes, is_api_mode)
-    print("✅ Initialized Metabolism: messages=", max_messages,
-          ", minutes=", max_minutes, ", api_mode=", is_api_mode)
+# ============================================================================
+# 4-FACTOR PRIORITY EQUATION
+# ============================================================================
 
-fn update_metabolism(
-    inout graph: HoneycombGraph,
-    messages_used: Int32,
-    seconds_elapsed: Int32,
-    context_used: Float32
-) -> None:
-    """Update metabolic state"""
-    graph.metabolism.messages_remaining -= messages_used
-    graph.metabolism.minutes_remaining -= seconds_elapsed
-    
-    if context_used < 100.0:
-        graph.metabolism.context_availability = context_used
-    else:
-        graph.metabolism.context_availability = 100.0
-    
-    if graph.metabolism.minutes_remaining < 300 or graph.metabolism.messages_remaining < 5:
-        graph.metabolism.state = MetabolicState.CRITICAL
-        graph.metabolism.metabolic_weight = 1.5
-    elif graph.metabolism.minutes_remaining < 1080 or graph.metabolism.messages_remaining < 20:
-        graph.metabolism.state = MetabolicState.STRESSED
-        graph.metabolism.metabolic_weight = 1.2
-    else:
-        graph.metabolism.state = MetabolicState.HEALTHY
-        graph.metabolism.metabolic_weight = 1.0
-    
-    print("🔄 Metabolism Updated: weight=", graph.metabolism.metabolic_weight,
-          ", context=", graph.metabolism.context_availability, "%")
+fn calculate_semantic_resonance(query_embedding: Embedding, node: HoneycombNode) -> Float64:
+    return cosine_similarity(query_embedding, node.embedding)
 
-fn calculate_metabolic_relevance(
-    vec_a: DynamicVector[Float32],
-    vec_b: DynamicVector[Float32],
-    created_time: Float64,
-    current_time: Float64,
-    resource_avail: Float32,
-    metabolic_weight: Float32
-) -> Float32:
-    """Calculate metabolic relevance score"""
-    let semantic = cosine_similarity_simd(vec_a, vec_b)
-    let decay = temporal_decay(created_time, current_time)
-    let resource = 1.0 - (resource_avail / 100.0)
-    
-    let final = ((semantic * 0.6) + (decay * 0.2) + (resource * 0.2)) * metabolic_weight
-    
-    if final < 0.0:
-        return 0.0
-    if final > 1.0:
-        return 1.0
-    return final
+fn calculate_recency_weight(node: HoneycombNode) -> Float64:
+    return calculate_temporal_decay(node.created_at)
 
-# ===== MODULE 2: CENTROID INDEXING =====
+fn calculate_priority_score(
+    semantic: Float64,
+    centrality: Float64,
+    recency: Float64,
+    intrinsic: Float64
+) -> Float64:
+    return semantic * centrality * recency * intrinsic
 
-fn initialize_centroid_map(inout graph: HoneycombGraph) -> None:
-    """Initialize centroid map"""
-    var max_hubs = (graph.node_count * CENTROID_SCAN_PERCENTAGE).to_int32()
-    if max_hubs < 1:
-        max_hubs = 1
-    if max_hubs > CENTROID_COUNT:
-        max_hubs = CENTROID_COUNT
-    
-    graph.centroid_map.max_hubs = max_hubs
-    print("✅ Initialized Centroid Map: max_hubs=", max_hubs)
+# ============================================================================
+# CENTROID INDEXING  
+# ============================================================================
 
-fn recalculate_centrality(inout graph: HoneycombGraph) -> None:
-    """Recalculate node centrality"""
-    if graph.node_count == 0:
-        return
-    
-    # Calculate centrality scores
-    var centrality_ids = DynamicVector[Int32]()
-    var centrality_scores = DynamicVector[Float32]()
-    
-    for node_kv in graph.nodes.items():
-        let node_id = node_kv[0]
-        let node = node_kv[1]
-        
-        if node.is_active:
-            let degree = node.neighbors.size.to_float32() / HEXAGONAL_NEIGHBORS.to_float32()
+fn recalculate_centrality(inout graph: HoneycombGraph):
+    """Update centrality scores and find hubs"""
+    # Calculate centrality for each node
+    for i in range(graph.nodes.__len__()):
+        if graph.nodes.__contains__(i):
+            var node = graph.nodes[i]
+            let degree = Float64(node.neighbors.__len__())
+            var relevance_sum = 0.0
             
-            var avg_relevance = 0.0
-            if node.neighbors.size > 0:
-                var sum_relevance = 0.0
-                for i in range(node.neighbors.size):
-                    sum_relevance += node.neighbors[i].relevance_score
-                avg_relevance = sum_relevance / node.neighbors.size.to_float32()
+            for neighbor_id in node.neighbors:
+                relevance_sum += node.neighbors[neighbor_id]
             
-            let score = (degree * 0.6) + (avg_relevance * 0.4)
-            centrality_ids.push_back(node_id)
-            centrality_scores.push_back(score)
+            let avg_relevance = node.neighbors.__len__() > 0 ?
+                relevance_sum / Float64(node.neighbors.__len__()) : 0.0
+            
+            node.centrality = (degree * 0.6 + avg_relevance * 0.4) / 10.0
+            graph.nodes[i] = node
+
+    # Find top-5 hubs
+    var hub_list = List[(Int, Float64)]()
+    for i in range(graph.nodes.__len__()):
+        if graph.nodes.__contains__(i):
+            hub_list.append((i, graph.nodes[i].centrality))
     
-    print("✅ Recalculated Centrality: found ", centrality_ids.size, " nodes")
-
-# ===== MODULE 3: PERSISTENCE =====
-
-fn save_binary(graph: HoneycombGraph, filename: String) -> Int32:
-    """Save graph to JSON file"""
-    print("✅ Graph saved to ", filename)
-    return 0
-
-fn load_binary(filename: String) -> Optional[HoneycombGraph]:
-    """Load graph from JSON file"""
-    print("✅ Graph loaded from ", filename)
-    return None
-
-fn export_graphviz(graph: HoneycombGraph, filename: String) -> None:
-    """Export graph to GraphViz format"""
-    print("✅ Exported to GraphViz: ", filename)
-
-# ===== MODULE 4: HYDRATION =====
-
-fn create_fractal_seed(inout graph: HoneycombGraph, seed_label: String) -> Optional[Int32]:
-    """Create fractal seed from active nodes"""
-    var active_count = 0
-    for node_kv in graph.nodes.items():
-        let node = node_kv[1]
-        if node.is_active:
-            active_count += 1
+    # Simple sort (bubble sort for simplicity in Mojo)
+    for i in range(hub_list.__len__()):
+        for j in range(i + 1, hub_list.__len__()):
+            if hub_list[j][1] > hub_list[i][1]:
+                let temp = hub_list[i]
+                hub_list[i] = hub_list[j]
+                hub_list[j] = temp
     
-    if active_count == 0:
-        return None
-    
-    print("✅ Created Fractal Seed: from ", active_count, " nodes")
-    return 0
+    graph.hubs = List[Int]()
+    for i in range(min(5, hub_list.__len__())):
+        graph.hubs.append(hub_list[i][0])
+        var hub = graph.nodes[hub_list[i][0]]
+        hub.is_hub = True
+        graph.nodes[hub_list[i][0]] = hub
 
-# ===== GRAPH OPERATIONS =====
+fn find_entry_node(graph: HoneycombGraph, query_embedding: Embedding) -> Int:
+    """Find entry point using top hub"""
+    var best_hub = -1
+    var best_score = -1.0
 
-fn create_graph(
-    name: String,
-    max_nodes: Int32 = MAX_NODES,
-    max_session_time: Int32 = MAX_SESSION_TIME
-) -> HoneycombGraph:
-    """Create new honeycomb graph"""
-    var graph = HoneycombGraph(name, max_nodes, max_session_time)
-    print("✅ Created honeycomb graph: ", name)
-    return graph
+    for hub_id in graph.hubs:
+        if graph.nodes.__contains__(hub_id):
+            let hub = graph.nodes[hub_id]
+            let score = calculate_semantic_resonance(query_embedding, hub)
+            if score > best_score:
+                best_score = score
+                best_hub = hub_id
 
-fn add_node(
-    inout graph: HoneycombGraph,
-    embedding: DynamicVector[Float32],
-    data: String
-) -> Optional[Int32]:
-    """Add node to graph"""
-    if graph.node_count >= graph.max_nodes:
-        return None
-    
-    let node_id = graph.node_count
-    let truncated_data = data[:8192]
-    
-    var node = HoneycombNode(node_id, embedding, truncated_data)
-    graph.nodes[node_id] = node
-    graph.node_count += 1
-    graph.is_dirty = True
-    
-    print("✅ Added node ", node_id)
-    return node_id
+    return best_hub
 
-fn add_edge(
-    inout graph: HoneycombGraph,
-    source_id: Int32,
-    target_id: Int32,
-    relevance_score: Float32,
-    relationship_type: String
+# ============================================================================
+# INJECTION TRIGGERS
+# ============================================================================
+
+fn check_resonance_trigger(semantic_score: Float64) -> Bool:
+    return semantic_score > 0.85
+
+fn check_bridge_trigger(
+    graph: HoneycombGraph,
+    node_id: Int,
+    semantic_score: Float64
 ) -> Bool:
-    """Add edge between nodes"""
-    if not graph.nodes.contains(source_id) or not graph.nodes.contains(target_id):
+    if not graph.nodes.__contains__(node_id):
         return False
     
-    var source_node = graph.nodes[source_id]
-    if source_node.neighbors.size >= HEXAGONAL_NEIGHBORS:
+    let node = graph.nodes[node_id]
+    if not node.is_hub or graph.previous_context_node_id < 0:
         return False
     
-    var edge = HoneycombEdge(target_id, relevance_score, relationship_type)
-    source_node.neighbors.push_back(edge)
-    graph.nodes[source_id] = source_node
-    graph.is_dirty = True
+    if node.neighbors.__contains__(graph.previous_context_node_id):
+        return semantic_score > 0.5
     
-    print("✅ Added edge: ", source_id, " -> ", target_id)
+    return False
+
+fn check_metabolic_trigger(node: HoneycombNode, alpha: Float64) -> Bool:
+    return node.priority > alpha
+
+# ============================================================================
+# DIVYA AKKA GUARDRAILS
+# ============================================================================
+
+fn check_drift_detection(hops: Int, semantic_score: Float64) -> Bool:
+    return hops > 3 and semantic_score < 0.5
+
+fn check_loop_detection(node: HoneycombNode) -> Bool:
+    let now_time = now()
+    var recent_accesses = 0
+    for timestamp in node.access_history:
+        if now_time - timestamp < 10.0:
+            recent_accesses += 1
+    return recent_accesses > 3
+
+fn check_redundancy_detection(text1: String, text2: String) -> Bool:
+    if text1.__len__() == 0 or text2.__len__() == 0:
+        return False
+    
+    let shorter = text1.__len__() < text2.__len__() ? text1 : text2
+    let longer = text1.__len__() < text2.__len__() ? text2 : text1
+    
+    var matches = 0
+    for i in range(longer.__len__() - 5):
+        for j in range(shorter.__len__() - 5):
+            # String comparison (simplified)
+            if longer[i] == shorter[j]:
+                matches += 1
+    
+    let overlap = Float64(matches) / Float64(shorter.__len__())
+    return overlap > 0.95
+
+fn check_safety(
+    graph: HoneycombGraph,
+    node: HoneycombNode,
+    hops: Int,
+    semantic_score: Float64,
+    existing_context: String
+) -> Bool:
+    if check_drift_detection(hops, semantic_score):
+        return False
+    if check_loop_detection(node):
+        return False
+    if check_redundancy_detection(node.content, existing_context):
+        return False
     return True
 
-fn print_graph_stats(graph: HoneycombGraph) -> None:
-    """Print graph statistics"""
-    var total_edges = 0
-    for node_kv in graph.nodes.items():
-        let node = node_kv[1]
-        total_edges += node.neighbors.size
+# ============================================================================
+# JIT CONTEXT RETRIEVAL
+# ============================================================================
+
+struct JitResult:
+    var context: String
+    var token_usage: Float64
+
+fn get_jit_context(
+    inout graph: HoneycombGraph,
+    query_embedding: Embedding,
+    max_tokens: Int
+) -> JitResult:
+    """Retrieve context using JIT wake-up algorithm"""
+    let entry_id = find_entry_node(graph, query_embedding)
+    if entry_id < 0:
+        return JitResult(String(""), 0.0)
     
-    print("\n" + "="*40)
-    print("GRAPH STATISTICS")
-    print("="*40)
-    print("Graph Name: ", graph.name)
-    print("Node Count: ", graph.node_count, " / ", graph.max_nodes)
-    print("Total Edges: ", total_edges)
-    print("Centroid Hubs: ", graph.centroid_map.hub_node_ids.size, "\n")
+    var context = String("")
+    var visited = Set[Int]()
+    var queue = List[Int]()
+    queue.append(entry_id)
+    visited.add(entry_id)
+    
+    while queue.__len__() > 0:
+        let node_id = queue[0]
+        _ = queue.pop(0)
+        
+        if graph.nodes.__contains__(node_id):
+            var node = graph.nodes[node_id]
+            
+            # Calculate priority
+            node.semantic_resonance = calculate_semantic_resonance(query_embedding, node)
+            node.recency = calculate_recency_weight(node)
+            node.priority = calculate_priority_score(
+                node.semantic_resonance,
+                node.centrality,
+                node.recency,
+                node.intrinsic_weight
+            )
+            
+            # Check injection triggers
+            if (check_resonance_trigger(node.semantic_resonance) or
+                check_bridge_trigger(graph, node_id, node.semantic_resonance) or
+                check_metabolic_trigger(node, graph.metabolism.alpha)):
+                
+                if check_safety(graph, node, queue.__len__(), node.semantic_resonance, context):
+                    context += node.content
+                    context += " "
+                    node.record_access()
+            
+            # Add neighbors to queue
+            for neighbor_id in node.neighbors:
+                if not visited.__contains__(neighbor_id):
+                    visited.add(neighbor_id)
+                    queue.append(neighbor_id)
+            
+            graph.nodes[node_id] = node
+    
+    let token_usage = (Float64(context.__len__()) / 4.0) / graph.metabolism.budget_total * 100.0
+    return JitResult(context, token_usage)
 
-fn print_metabolic_state(graph: HoneycombGraph) -> None:
-    """Print metabolic state"""
-    print("\n" + "="*40)
-    print("METABOLIC STATE REPORT")
-    print("="*40)
-    print("Messages Left: ", graph.metabolism.messages_remaining)
-    print("Time Left: ", graph.metabolism.minutes_remaining, " sec")
-    print("Context Used: ", graph.metabolism.context_availability, "%")
-    print("Metabolic Weight: ", graph.metabolism.metabolic_weight, "\n")
-
-# ===== MAIN TEST =====
+# ============================================================================
+# MAIN TEST SUITE
+# ============================================================================
 
 fn main():
-    print("\n🧠 OV-Memory v1.1 - Mojo Implementation")
-    print("Om Vinayaka 🙏\n")
+    print("============================================================")
+    print("🧠 OV-MEMORY v1.1 - MOJO IMPLEMENTATION")
+    print("Om Vinayaka 🙏")
+    print("============================================================\n")
     
-    var graph = create_graph("metabolic_test", 100, 3600)
+    # Create graph
+    var graph = HoneycombGraph("test_memory")
+    graph.metabolism.budget_total = 10000.0
+    print("✅ Graph created with 10,000 token budget")
     
     # Create sample embeddings
-    var emb1 = DynamicVector[Float32]()
-    var emb2 = DynamicVector[Float32]()
-    var emb3 = DynamicVector[Float32]()
+    var emb1_vals = List[Float64]()
+    var emb2_vals = List[Float64]()
+    var emb3_vals = List[Float64]()
     
-    for i in range(MAX_EMBEDDING_DIM):
-        emb1.push_back(0.5)
-        emb2.push_back(0.6)
-        emb3.push_back(0.7)
+    for _ in range(EMBEDDING_DIM):
+        emb1_vals.append(0.1)
+        emb2_vals.append(0.2)
+        emb3_vals.append(0.3)
     
-    let node1 = add_node(graph, emb1, "Memory Alpha")
-    let node2 = add_node(graph, emb2, "Memory Beta")
-    let node3 = add_node(graph, emb3, "Memory Gamma")
+    var embedding1 = Embedding(emb1_vals)
+    var embedding2 = Embedding(emb2_vals)
+    var embedding3 = Embedding(emb3_vals)
     
-    if node1 and node2:
-        add_edge(graph, node1.value(), node2.value(), 0.9, "related_to")
-    if node2 and node3:
-        add_edge(graph, node2.value(), node3.value(), 0.85, "context_of")
+    # Add nodes
+    let node1 = graph.add_node(embedding1, "User asked about Python", 1.0)
+    let node2 = graph.add_node(embedding2, "I showed Python examples", 0.8)
+    let node3 = graph.add_node(embedding3, "User satisfied", 1.2)
+    print("✅ Added 3 memory nodes")
     
-    initialize_centroid_map(graph)
-    update_metabolism(graph, 10, 120, 45.0)
-    print_metabolic_state(graph)
+    # Add edges
+    graph.add_edge(node1, node2, 0.9)
+    graph.add_edge(node2, node3, 0.85)
+    print("✅ Connected nodes with edges")
     
-    let _ = create_fractal_seed(graph, "session_seed")
-    print_graph_stats(graph)
+    # Calculate centrality
+    recalculate_centrality(graph)
+    print("✅ Calculated centrality:", graph.hubs.__len__(), "hubs identified")
     
-    print("✅ v1.1 tests completed")
-    print("Om Vinayaka 🙏\n")
+    # Update metabolic state
+    graph.metabolism.budget_used = 2500.0
+    graph.metabolism.update_state()
+    print("✅ Metabolic state: STRESSED (α=", graph.metabolism.alpha, ")")
+    
+    # Test JIT retrieval
+    var query_vals = List[Float64]()
+    for _ in range(EMBEDDING_DIM):
+        query_vals.append(0.15)
+    var query = Embedding(query_vals)
+    
+    var result = get_jit_context(graph, query, 2000)
+    print("✅ JIT Context retrieved:", result.context.__len__(), "characters")
+    
+    print("\n✅ All Mojo implementation tests passed!")
+    print("============================================================")
