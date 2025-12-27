@@ -141,7 +141,7 @@ def retrieve_context(query_embedding):
     return OVMemory.get_jit_context(memory_db, query_embedding)
 
 message = client.messages.create(
-    model="claude-3-5-sonnet-20241022",
+    model="claude-4-5-sonnet-20241022",
     max_tokens=1024,
     system=f"Relevant context: {retrieve_context(query_emb)}",
     messages=[{"role": "user", "content": "..."}]
@@ -159,7 +159,7 @@ genai.configure(api_key="YOUR_API_KEY")
 def retrieve_context(query_embedding):
     return OVMemory.get_jit_context(memory_db, query_embedding)
 
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-3.0-flash')
 response = model.generate_content(
     f"Using context: {retrieve_context(query_emb)}\n\nUser query: ..."
 )
@@ -177,7 +177,7 @@ def retrieve_context(query_embedding):
     return OVMemory.get_jit_context(memory_db, query_embedding)
 
 response = openai.ChatCompletion.create(
-    model="gpt-4-turbo",
+    model="gpt-codex-max",
     messages=[
         {"role": "system", "content": f"Relevant code context: {retrieve_context(code_emb)}"},
         {"role": "user", "content": "Complete this function..."}
